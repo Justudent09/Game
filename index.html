@@ -147,35 +147,37 @@
         }
 
         // Показ модального окна
-        function showEndGameModal(message) {
-            if (window.Telegram && window.Telegram.WebApp) {
-                const tg = window.Telegram.WebApp;
+function showEndGameModal(message) {
+    if (window.Telegram && window.Telegram.WebApp) {
+        const tg = window.Telegram.WebApp;
 
-                tg.showPopup({
-                    title: 'Игра окончена',
-                    message: message,
-                    buttons: [
-                        { id: 'restart', type: 'default', text: 'Начать заново' }
-                    ]
-                }, (buttonId) => {
-                    resetGame();
-                });
-
-                document.body.addEventListener('click', onBodyClick);
-            } else {
-                alert(message);
+        // Показываем модальное окно
+        tg.showPopup({
+            title: 'Игра окончена',
+            message: message,
+            buttons: [
+                { id: 'restart', type: 'default', text: 'Начать заново' }
+            ]
+        }, (buttonId) => {
+            if (buttonId === 'restart') {
+                resetGame();
             }
+        });
+    } else {
+        // Для браузерной версии
+        if (confirm(message + "\nНачать заново?")) {
+            resetGame();
         }
+    }
+}
 
-        // Перезапуск игры
-        function resetGame() {
-            boardState = Array(9).fill(null);
-            currentPlayer = '❌';
-            gameActive = true;
-            createBoard();
-
-            document.body.removeEventListener('click', onBodyClick);
-        }
+// Перезапуск игры
+function resetGame() {
+    boardState = Array(9).fill(null);
+    currentPlayer = '❌';
+    gameActive = true;
+    createBoard();
+}
 
         // Обработчик клика по внешней области
         function onBodyClick(event) {
