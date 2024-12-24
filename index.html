@@ -24,8 +24,34 @@
             display: grid;
             grid-template-columns: repeat(3, 100px);
             grid-template-rows: repeat(3, 100px);
-            gap: 5px;
+            position: relative;
             margin: auto;
+        }
+
+        .board::before,
+        .board::after {
+            content: '';
+            position: absolute;
+            background-color: var(--tg-theme-section-separator-color);
+            border-radius: 10px;
+        }
+
+        /* Горизонтальные линии */
+        .board::before {
+            width: 310px;
+            height: 5px;
+            top: 100px;
+            left: 0;
+            box-shadow: 0 100px 0 0 var(--tg-theme-section-separator-color);
+        }
+
+        /* Вертикальные линии */
+        .board::after {
+            width: 5px;
+            height: 310px;
+            left: 100px;
+            top: 0;
+            box-shadow: 100px 0 0 0 var(--tg-theme-section-separator-color);
         }
 
         .cell {
@@ -35,8 +61,6 @@
             width: 100px;
             height: 100px;
             font-size: 2em;
-            border: 5px solid var(--tg-theme-section-separator-color);
-            border-radius: 5px;
             cursor: pointer;
         }
 
@@ -50,117 +74,114 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-    if (window.Telegram && window.Telegram.WebApp) {
-        const tg = window.Telegram.WebApp;
-        tg.expand();
-        console.log('Telegram WebApp успешно инициализирован');
-    } else {
-        console.warn('Telegram WebApp API недоступен');
-    }
-});
-
-const board = document.getElementById('board');
-let currentPlayer = '❌';
-let boardState = Array(9).fill(null);
-let gameActive = true;
-
-// Создание доски
-function createBoard() {
-    board.innerHTML = '';
-    boardState.forEach((cell, index) => {
-        const cellDiv = document.createElement('div');
-        cellDiv.classList.add('cell');
-        cellDiv.dataset.index = index;
-        cellDiv.addEventListener('click', onCellClick);
-        board.appendChild(cellDiv);
-    });
-}
-
-// Обработчик клика по ячейке
-function onCellClick(event) {
-    const index = event.target.dataset.index;
-
-    if (boardState[index] || !gameActive) return;
-
-    boardState[index] = currentPlayer;
-    event.target.textContent = currentPlayer;
-    event.target.classList.add('taken');
-
-    if (checkWinner()) {
-        gameActive = false;
-        showEndGameModal(`${currentPlayer} победил! 🎉`);
-        return;
-    }
-
-    if (!boardState.includes(null)) {
-        gameActive = false;
-        showEndGameModal('Ничья! 🤝');
-        return;
-    }
-
-    currentPlayer = currentPlayer === '❌' ? '⭕' : '❌';
-}
-
-// Проверка победителя
-function checkWinner() {
-    const winPatterns = [
-        [0, 1, 2],
-        [3, 4, 5],
-        [6, 7, 8],
-        [0, 3, 6],
-        [1, 4, 7],
-        [2, 5, 8],
-        [0, 4, 8],
-        [2, 4, 6]
-    ];
-
-    return winPatterns.some(pattern => {
-        const [a, b, c] = pattern;
-        return boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c];
-    });
-}
-
-// Показ модального окна
-function showEndGameModal(message) {
-    if (window.Telegram && window.Telegram.WebApp) {
-        const tg = window.Telegram.WebApp;
-
-        // Показываем модальное окно
-        tg.showPopup({
-            title: 'Игра окончена',
-            message: message,
-            buttons: [
-                { id: 'restart', type: 'default', text: 'Начать заново' }
-            ]
-        }, (buttonId) => {
-            resetGame();
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
+                tg.expand();
+                console.log('Telegram WebApp успешно инициализирован');
+            } else {
+                console.warn('Telegram WebApp API недоступен');
+            }
         });
 
-        // Добавляем глобальный обработчик для клика по телу страницы
-        document.body.addEventListener('click', onBodyClick);
-    } else {
-        alert(message);
-    }
-}
+        const board = document.getElementById('board');
+        let currentPlayer = '❌';
+        let boardState = Array(9).fill(null);
+        let gameActive = true;
 
-// Перезапуск игры
-function resetGame() {
-    boardState = Array(9).fill(null);
-    currentPlayer = '❌';
-    gameActive = true;
-    createBoard();
+        // Создание доски
+        function createBoard() {
+            board.innerHTML = '';
+            boardState.forEach((cell, index) => {
+                const cellDiv = document.createElement('div');
+                cellDiv.classList.add('cell');
+                cellDiv.dataset.index = index;
+                cellDiv.addEventListener('click', onCellClick);
+                board.appendChild(cellDiv);
+            });
+        }
 
-    // Удаляем обработчик клика по body после перезапуска
-    document.body.removeEventListener('click', onBodyClick);
-}
+        // Обработчик клика по ячейке
+        function onCellClick(event) {
+            const index = event.target.dataset.index;
 
-// Обработчик клика по внешней области
-function onBodyClick(event) {
-    resetGame();
-}
+            if (boardState[index] || !gameActive) return;
 
-// Инициализация доски
-createBoard();
+            boardState[index] = currentPlayer;
+            event.target.textContent = currentPlayer;
+            event.target.classList.add('taken');
+
+            if (checkWinner()) {
+                gameActive = false;
+                showEndGameModal(`${currentPlayer} победил! 🎉`);
+                return;
+            }
+
+            if (!boardState.includes(null)) {
+                gameActive = false;
+                showEndGameModal('Ничья! 🤝');
+                return;
+            }
+
+            currentPlayer = currentPlayer === '❌' ? '⭕' : '❌';
+        }
+
+        // Проверка победителя
+        function checkWinner() {
+            const winPatterns = [
+                [0, 1, 2],
+                [3, 4, 5],
+                [6, 7, 8],
+                [0, 3, 6],
+                [1, 4, 7],
+                [2, 5, 8],
+                [0, 4, 8],
+                [2, 4, 6]
+            ];
+
+            return winPatterns.some(pattern => {
+                const [a, b, c] = pattern;
+                return boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c];
+            });
+        }
+
+        // Показ модального окна
+        function showEndGameModal(message) {
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
+
+                tg.showPopup({
+                    title: 'Игра окончена',
+                    message: message,
+                    buttons: [
+                        { id: 'restart', type: 'default', text: 'Начать заново' }
+                    ]
+                }, (buttonId) => {
+                    resetGame();
+                });
+
+                document.body.addEventListener('click', onBodyClick);
+            } else {
+                alert(message);
+            }
+        }
+
+        // Перезапуск игры
+        function resetGame() {
+            boardState = Array(9).fill(null);
+            currentPlayer = '❌';
+            gameActive = true;
+            createBoard();
+
+            document.body.removeEventListener('click', onBodyClick);
+        }
+
+        // Обработчик клика по внешней области
+        function onBodyClick(event) {
+            resetGame();
+        }
+
+        // Инициализация доски
+        createBoard();
     </script>
 </body>
 </html>
