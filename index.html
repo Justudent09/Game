@@ -51,101 +51,118 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            if (window.Telegram && window.Telegram.WebApp) {
-                const tg = window.Telegram.WebApp;
-                tg.expand();
-                console.log('Telegram WebApp успешно инициализирован');
-            } else {
-                console.warn('Telegram WebApp API недоступен');
-            }
+    if (window.Telegram && window.Telegram.WebApp) {
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        console.log('Telegram WebApp успешно инициализирован');
+    } else {
+        console.warn('Telegram WebApp API недоступен');
+    }
+});
+
+const board = document.getElementById('board');
+let currentPlayer = '❌';
+let boardState = Array(9).fill(null);
+let gameActive = true;
+
+// Создание доски
+function createBoard() {
+    board.innerHTML = '';
+    boardState.forEach((cell, index) => {
+        const cellDiv = document.createElement('div');
+        cellDiv.classList.add('cell');
+        cellDiv.dataset.index = index;
+        cellDiv.addEventListener('click', onCellClick);
+        board.appendChild(cellDiv);
+    });
+}
+
+// Обработчик клика по ячейке
+function onCellClick(event) {
+    const index = event.target.dataset.index;
+
+    if (boardState[index] || !gameActive) return;
+
+    boardState[index] = currentPlayer;
+    event.target.textContent = currentPlayer;
+    event.target.classList.add('taken');
+
+    if (checkWinner()) {
+        gameActive = false;
+        showEndGameModal(`${currentPlayer} победил! 🎉`);
+        return;
+    }
+
+    if (!boardState.includes(null)) {
+        gameActive = false;
+        showEndGameModal('Ничья! 🤝');
+        return;
+    }
+
+    currentPlayer = currentPlayer === '❌' ? '⭕' : '❌';
+}
+
+// Проверка победителя
+function checkWinner() {
+    const winPatterns = [
+        [0, 1, 2],
+        [3, 4, 5],
+        [6, 7, 8],
+        [0, 3, 6],
+        [1, 4, 7],
+        [2, 5, 8],
+        [0, 4, 8],
+        [2, 4, 6]
+    ];
+
+    return winPatterns.some(pattern => {
+        const [a, b, c] = pattern;
+        return boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c];
+    });
+}
+
+// Показ модального окна
+function showEndGameModal(message) {
+    if (window.Telegram && window.Telegram.WebApp) {
+        const tg = window.Telegram.WebApp;
+
+        // Показываем модальное окно
+        tg.showPopup({
+            title: 'Игра окончена',
+            message: message,
+            buttons: [
+                { id: 'restart', type: 'default', text: 'Начать заново' }
+            ]
+        }, (buttonId) => {
+            resetGame();
         });
 
-        const board = document.getElementById('board');
-        let currentPlayer = '❌';
-        let boardState = Array(9).fill(null);
-        let gameActive = true;
+        // Добавляем глобальный обработчик для клика по телу страницы
+        document.body.addEventListener('click', onBodyClick);
+    } else {
+        alert(message);
+        resetGame();
+    }
+}
 
-        function createBoard() {
-            board.innerHTML = '';
-            boardState.forEach((cell, index) => {
-                const cellDiv = document.createElement('div');
-                cellDiv.classList.add('cell');
-                cellDiv.dataset.index = index;
-                cellDiv.addEventListener('click', onCellClick);
-                board.appendChild(cellDiv);
-            });
-        }
+// Перезапуск игры
+function resetGame() {
+    boardState = Array(9).fill(null);
+    currentPlayer = '❌';
+    gameActive = true;
+    createBoard();
 
-        function onCellClick(event) {
-            const index = event.target.dataset.index;
+    // Удаляем обработчик клика по body после перезапуска
+    document.body.removeEventListener('click', onBodyClick);
+}
 
-            if (boardState[index] || !gameActive) return;
+// Обработчик клика по внешней области
+function onBodyClick(event) {
+    resetGame();
+}
 
-            boardState[index] = currentPlayer;
-            event.target.textContent = currentPlayer;
-            event.target.classList.add('taken');
-
-            if (checkWinner()) {
-                gameActive = false;
-                showEndGameModal(`${currentPlayer} победил! 🎉`);
-                return;
-            }
-
-            if (!boardState.includes(null)) {
-                gameActive = false;
-                showEndGameModal('Ничья! 🤝');
-                return;
-            }
-
-            currentPlayer = currentPlayer === '❌' ? '⭕' : '❌';
-        }
-
-        function checkWinner() {
-            const winPatterns = [
-                [0, 1, 2],
-                [3, 4, 5],
-                [6, 7, 8],
-                [0, 3, 6],
-                [1, 4, 7],
-                [2, 5, 8],
-                [0, 4, 8],
-                [2, 4, 6]
-            ];
-
-            return winPatterns.some(pattern => {
-                const [a, b, c] = pattern;
-                return boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c];
-            });
-        }
-
-        function showEndGameModal(message) {
-            if (window.Telegram && window.Telegram.WebApp) {
-                const tg = window.Telegram.WebApp;
-                tg.showPopup({
-                    title: 'Игра окончена',
-                    message: message,
-                    buttons: [
-                        { id: 'restart', type: 'default', text: 'Начать заново' }
-                    ]
-                }, (buttonId) => {
-                    if (buttonId === 'restart') {
-                        resetGame();
-                    }
-                });
-            } else {
-                alert(message);
-                resetGame();
-            }
-        }
-
-        function resetGame() {
-            boardState = Array(9).fill(null);
-            currentPlayer = '❌';
-            gameActive = true;
-            createBoard();
-        }
-
-        createBoard();
+// Инициализация доски
+createBoard();
     </script>
 </body>
 </html>
