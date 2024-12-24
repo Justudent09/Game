@@ -158,6 +158,9 @@
                         resetGame();
                     }
                 });
+                tg.onEvent('popupClosed', () => {
+                    resetGame();
+                });
             } else {
                 resetGame();
             }
