@@ -40,6 +40,7 @@
             width: 100px;
             height: 100px;
             font-size: 2em;
+            border-radius: 5px;
             border: 1px solid var(--tg-theme-hint-color, #ccc);
             background-color: var(--tg-theme-secondary-bg-color, #fff);
             cursor: pointer;
@@ -119,16 +120,12 @@
 
             if (checkWinner()) {
                 status.textContent = `Игрок ${currentPlayer} победил!`;
-                if (window.Telegram && window.Telegram.WebApp) {
-                }
                 gameActive = false;
                 return;
             }
 
             if (!boardState.includes(null)) {
                 status.textContent = 'Ничья!';
-                if (window.Telegram && window.Telegram.WebApp) {
-                }
                 gameActive = false;
                 return;
             }
