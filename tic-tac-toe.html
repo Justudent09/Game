@@ -119,7 +119,7 @@
             if (checkWinner()) {
                 status.textContent = `Игрок ${currentPlayer} победил!`;
                 if (window.Telegram && window.Telegram.WebApp) {
-                    window.Telegram.WebApp.showAlert(`Игрок ${currentPlayer} победил!`);
+                    alert(`Игрок ${currentPlayer} победил!`);
                 }
                 gameActive = false;
                 return;
@@ -128,7 +128,7 @@
             if (!boardState.includes(null)) {
                 status.textContent = 'Ничья!';
                 if (window.Telegram && window.Telegram.WebApp) {
-                    window.Telegram.WebApp.showAlert('Ничья!');
+                    alert(`Ничья!`);
                 }
                 gameActive = false;
                 return;
@@ -174,11 +174,9 @@
         // 🚪 Кнопка назад Telegram WebApp
         if (window.Telegram && window.Telegram.WebApp) {
             const tg = window.Telegram.WebApp;
-            if (tg.BackButton) {
-                tg.BackButton.show();
-                tg.BackButton.onClick(() => {
-                    tg.close();
-                });
+            if (window.Telegram && window.Telegram.WebApp) {
+                console.log('Telegram WebApp API доступен');
+                tg.expand();
             }
         }
     </script>
