@@ -151,7 +151,9 @@ function showEndGameModal(message) {
     if (window.Telegram && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
 
-        // Показываем модальное окно
+        // Отключаем взаимодействие с доской
+        gameActive = false;
+
         tg.showPopup({
             title: 'Игра окончена',
             message: message,
@@ -161,12 +163,19 @@ function showEndGameModal(message) {
         }, (buttonId) => {
             if (buttonId === 'restart') {
                 resetGame();
+            } else {
+                // Повторный показ модального окна, если нажато вне области
+                showEndGameModal(message);
             }
         });
     } else {
-        // Для браузерной версии
-        if (confirm(message + "\nНачать заново?")) {
-            resetGame();
+        // Для браузерной версии (fallback)
+        while (true) {
+            const restart = confirm(message + "\nНажмите 'OK', чтобы начать заново.");
+            if (restart) {
+                resetGame();
+                break;
+            }
         }
     }
 }
@@ -178,11 +187,6 @@ function resetGame() {
     gameActive = true;
     createBoard();
 }
-
-        // Обработчик клика по внешней области
-        function onBodyClick(event) {
-            resetGame();
-        }
 
         // Инициализация доски
         createBoard();
