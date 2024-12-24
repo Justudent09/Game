@@ -6,7 +6,6 @@
     <title>Крестики-нолики</title>
     <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <style>
-        /* Общие стили */
         body {
             -webkit-tap-highlight-color: transparent;
             font-family: Arial, sans-serif;
@@ -21,16 +20,12 @@
             color: var(--tg-theme-text-color, #000);
         }
 
-        h1 {
-            margin-bottom: 20px;
-        }
-
-        /* Игровое поле */
         .board {
             display: grid;
             grid-template-columns: repeat(3, 100px);
             grid-template-rows: repeat(3, 100px);
             gap: 5px;
+            margin: auto;
         }
 
         .cell {
@@ -40,8 +35,8 @@
             width: 100px;
             height: 100px;
             font-size: 2em;
-            border-radius: 5px;
             border: 1px solid var(--tg-theme-hint-color, #ccc);
+            border-radius: 5px;
             background-color: var(--tg-theme-secondary-bg-color, #fff);
             cursor: pointer;
         }
@@ -49,34 +44,12 @@
         .cell.taken {
             cursor: not-allowed;
         }
-
-        /* Статус игры */
-        .status {
-            margin-top: 20px;
-            font-size: 1.2em;
-        }
-
-        /* Кнопка сброса */
-        .reset-btn {
-            margin-top: 20px;
-            font-size: 1em;
-            padding: 10px 20px;
-            cursor: pointer;
-            background-color: var(--tg-theme-button-color, #0088cc);
-            color: var(--tg-theme-button-text-color, #fff);
-            border: none;
-            border-radius: 5px;
-        }
     </style>
 </head>
 <body>
-    <h1>Крестики-нолики</h1>
     <div class="board" id="board"></div>
-    <div class="status" id="status">Ход: ❌</div>
-    <button class="reset-btn" id="resetBtn">Начать заново</button>
 
     <script>
-        // ✅ Инициализация Telegram WebApp
         document.addEventListener('DOMContentLoaded', () => {
             if (window.Telegram && window.Telegram.WebApp) {
                 const tg = window.Telegram.WebApp;
@@ -87,16 +60,11 @@
             }
         });
 
-        // ✅ Игра "Крестики-нолики"
         const board = document.getElementById('board');
-        const status = document.getElementById('status');
-        const resetBtn = document.getElementById('resetBtn');
-
         let currentPlayer = '❌';
         let boardState = Array(9).fill(null);
         let gameActive = true;
 
-        // 🟢 Создание игрового поля
         function createBoard() {
             board.innerHTML = '';
             boardState.forEach((cell, index) => {
@@ -108,7 +76,6 @@
             });
         }
 
-        // 🟡 Обработка клика по ячейке
         function onCellClick(event) {
             const index = event.target.dataset.index;
 
@@ -119,22 +86,20 @@
             event.target.classList.add('taken');
 
             if (checkWinner()) {
-                status.textContent = `Игрок ${currentPlayer} победил!`;
                 gameActive = false;
+                showEndGameModal(`${currentPlayer} победил! 🎉`);
                 return;
             }
 
             if (!boardState.includes(null)) {
-                status.textContent = 'Ничья!';
                 gameActive = false;
+                showEndGameModal('Ничья! 🤝');
                 return;
             }
 
             currentPlayer = currentPlayer === '❌' ? '⭕' : '❌';
-            status.textContent = `Ход: ${currentPlayer}`;
         }
 
-        // 🔴 Проверка победителя
         function checkWinner() {
             const winPatterns = [
                 [0, 1, 2],
@@ -153,28 +118,34 @@
             });
         }
 
-        // 🔄 Сброс игры
+        function showEndGameModal(message) {
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
+                tg.showPopup({
+                    title: 'Игра окончена',
+                    message: message,
+                    buttons: [
+                        { id: 'restart', type: 'default', text: 'Начать заново' }
+                    ]
+                }, (buttonId) => {
+                    if (buttonId === 'restart') {
+                        resetGame();
+                    }
+                });
+            } else {
+                alert(message);
+                resetGame();
+            }
+        }
+
         function resetGame() {
             boardState = Array(9).fill(null);
             currentPlayer = '❌';
             gameActive = true;
-            status.textContent = `Ход: ${currentPlayer}`;
             createBoard();
         }
 
-        resetBtn.addEventListener('click', resetGame);
-
-        // 🟢 Инициализация игры
         createBoard();
-
-        // 🚪 Кнопка назад Telegram WebApp
-        if (window.Telegram && window.Telegram.WebApp) {
-            const tg = window.Telegram.WebApp;
-            if (window.Telegram && window.Telegram.WebApp) {
-                console.log('Telegram WebApp API доступен');
-                tg.expand();
-            }
-        }
     </script>
 </body>
 </html>
