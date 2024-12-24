@@ -36,7 +36,6 @@
             border-radius: 10px;
         }
 
-        /* Горизонтальные линии */
         .board::before {
             width: 310px;
             height: 10px;
@@ -45,7 +44,6 @@
             box-shadow: 0 100px 0 0 var(--tg-theme-section-separator-color);
         }
 
-        /* Вертикальные линии */
         .board::after {
             width: 10px;
             height: 310px;
@@ -55,20 +53,20 @@
         }
 
         .cell {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 100px;
-    height: 100px;
-    font-size: 2.5em; /* Увеличиваем размер шрифта для лучшей видимости */
-    font-family: "Segoe UI Emoji", "Noto Color Emoji", "Apple Color Emoji", sans-serif; /* Явно указываем шрифт для эмодзи */
-    line-height: 1; /* Убираем дополнительный отступ по вертикали */
-    cursor: pointer;
-}
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100px;
+            height: 100px;
+            font-size: 2.5em;
+            font-family: "Segoe UI Emoji", "Noto Color Emoji", "Apple Color Emoji", sans-serif;
+            line-height: 1;
+            cursor: pointer;
+        }
 
-.cell.taken {
-    cursor: not-allowed;
-}
+        .cell.taken {
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
@@ -90,7 +88,6 @@
         let boardState = Array(9).fill(null);
         let gameActive = true;
 
-        // Создание доски
         function createBoard() {
             board.innerHTML = '';
             boardState.forEach((cell, index) => {
@@ -102,7 +99,6 @@
             });
         }
 
-        // Обработчик клика по ячейке
         function onCellClick(event) {
             const index = event.target.dataset.index;
 
@@ -127,7 +123,6 @@
             currentPlayer = currentPlayer === '❌' ? '⭕' : '❌';
         }
 
-        // Проверка победителя
         function checkWinner() {
             const winPatterns = [
                 [0, 1, 2],
@@ -146,41 +141,35 @@
             });
         }
 
-        // Показ модального окна
-function showEndGameModal(message) {
-    if (window.Telegram && window.Telegram.WebApp) {
-        const tg = window.Telegram.WebApp;
+        function showEndGameModal(message) {
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
 
-        // Отключаем взаимодействие с доской
-        gameActive = false;
+                gameActive = false;
 
-        tg.showPopup({
-            title: 'Игра окончена',
-            message: message,
-            buttons: [
-                { id: 'restart', type: 'default', text: 'Начать заново' }
-            ]
-        }, (buttonId) => {
-            if (buttonId === 'restart') {
+                tg.showPopup({
+                    title: 'Игра окончена',
+                    message: message,
+                    buttons: [
+                        { id: 'restart', type: 'default', text: 'Начать заново' }
+                    ]
+                }, (buttonId) => {
+                    if (buttonId === 'restart') {
+                        resetGame();
+                    }
+                });
+            } else {
                 resetGame();
             }
-        });
-    } else {
-        // Для браузерной версии (fallback)
-        alert(message + "\nНажмите 'OK', чтобы начать заново.");
-        resetGame();
-    }
-}
+        }
 
-// Перезапуск игры
-function resetGame() {
-    boardState = Array(9).fill(null);
-    currentPlayer = '❌';
-    gameActive = true;
-    createBoard();
-}
+        function resetGame() {
+            boardState = Array(9).fill(null);
+            currentPlayer = '❌';
+            gameActive = true;
+            createBoard();
+        }
 
-        // Инициализация доски
         createBoard();
     </script>
 </body>
