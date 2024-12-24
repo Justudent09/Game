@@ -8,6 +8,7 @@
     <style>
         /* Общие стили */
         body {
+            -webkit-tap-highlight-color: transparent;
             font-family: Arial, sans-serif;
             text-align: center;
             margin: 0;
@@ -119,7 +120,6 @@
             if (checkWinner()) {
                 status.textContent = `Игрок ${currentPlayer} победил!`;
                 if (window.Telegram && window.Telegram.WebApp) {
-                    alert(`Игрок ${currentPlayer} победил!`);
                 }
                 gameActive = false;
                 return;
@@ -128,7 +128,6 @@
             if (!boardState.includes(null)) {
                 status.textContent = 'Ничья!';
                 if (window.Telegram && window.Telegram.WebApp) {
-                    alert(`Ничья!`);
                 }
                 gameActive = false;
                 return;
