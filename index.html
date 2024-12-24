@@ -72,7 +72,7 @@
 <body>
     <h1>Крестики-нолики</h1>
     <div class="board" id="board"></div>
-    <div class="status" id="status">Ход: X</div>
+    <div class="status" id="status">Ход: ❌</div>
     <button class="reset-btn" id="resetBtn">Начать заново</button>
 
     <script>
@@ -92,7 +92,7 @@
         const status = document.getElementById('status');
         const resetBtn = document.getElementById('resetBtn');
 
-        let currentPlayer = 'X';
+        let currentPlayer = '❌';
         let boardState = Array(9).fill(null);
         let gameActive = true;
 
@@ -130,7 +130,7 @@
                 return;
             }
 
-            currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
+            currentPlayer = currentPlayer === '❌' ? '⭕' : '❌';
             status.textContent = `Ход: ${currentPlayer}`;
         }
 
@@ -156,7 +156,7 @@
         // 🔄 Сброс игры
         function resetGame() {
             boardState = Array(9).fill(null);
-            currentPlayer = 'X';
+            currentPlayer = '❌';
             gameActive = true;
             status.textContent = `Ход: ${currentPlayer}`;
             createBoard();
