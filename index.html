@@ -163,20 +163,12 @@ function showEndGameModal(message) {
         }, (buttonId) => {
             if (buttonId === 'restart') {
                 resetGame();
-            } else {
-                // Повторный показ модального окна, если нажато вне области
-                showEndGameModal(message);
             }
         });
     } else {
         // Для браузерной версии (fallback)
-        while (true) {
-            const restart = confirm(message + "\nНажмите 'OK', чтобы начать заново.");
-            if (restart) {
-                resetGame();
-                break;
-            }
-        }
+        alert(message + "\nНажмите 'OK', чтобы начать заново.");
+        resetGame();
     }
 }
 
