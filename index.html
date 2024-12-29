@@ -100,28 +100,33 @@
         }
 
         function onCellClick(event) {
-            const index = event.target.dataset.index;
+    const index = event.target.dataset.index;
 
-            if (boardState[index] || !gameActive) return;
+    if (boardState[index] || !gameActive) return;
 
-            boardState[index] = currentPlayer;
-            event.target.textContent = currentPlayer;
-            event.target.classList.add('taken');
+    boardState[index] = currentPlayer;
+    event.target.textContent = currentPlayer;
+    event.target.classList.add('taken');
 
-            if (checkWinner()) {
-                gameActive = false;
-                showEndGameModal(`${currentPlayer} победил! 🎉`);
-                return;
-            }
+    // Виброотклик при каждом ходе
+    if (window.Telegram && Telegram.WebApp.HapticFeedback) {
+        Telegram.WebApp.HapticFeedback.impactOccurred('medium');
+    }
 
-            if (!boardState.includes(null)) {
-                gameActive = false;
-                showEndGameModal('Ничья! 🤝');
-                return;
-            }
+    if (checkWinner()) {
+        gameActive = false;
+        showEndGameModal(`${currentPlayer} победил! 🎉`);
+        return;
+    }
 
-            currentPlayer = currentPlayer === '❌' ? '⭕' : '❌';
-        }
+    if (!boardState.includes(null)) {
+        gameActive = false;
+        showEndGameModal('Ничья! 🤝');
+        return;
+    }
+
+    currentPlayer = currentPlayer === '❌' ? '⭕' : '❌';
+}
 
         function checkWinner() {
             const winPatterns = [
