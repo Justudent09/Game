@@ -2,361 +2,110 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no">
-    <title>Shedule</title>
-    <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telegram CloudStorage Example</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body {
-            user-select: none;
-            -webkit-user-select: none; 
-            -ms-user-select: none; 
-            -webkit-tap-highlight-color: transparent;
-            margin: 0;
             font-family: Arial, sans-serif;
-            background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-            display: flex;
-            justify-content: center;
-            height: 100vh;
-            caret-color: var(--tg-theme-accent-text-color);
-            overflow: hidden;
-            touch-action: none;
-        }
-
-        .container {
-    width: 85vw;
-    max-width: 400px;
-    text-align: center;
-    display: flex;
-    padding-top: 60px;
-    flex-direction: column;
-    align-items: center; /* Центрирование по горизонтали */
-    justify-content: center; /* Центрирование по вертикали */
-    margin: auto; /* Дополнительная страховка */
-    height: 100vh - 15vw; /* Занимает всю высоту экрана */
-    position: relative; /* Для анимации */
-    transition: transform 0.6s ease-in-out, opacity 0.6s ease-in-out;
-}
-
-        .schedule {
-            display: none; /* Появляется после успешной проверки или регистрации */
-            font-size: 24px;
             text-align: center;
-            font-weight: bold;
+            margin: 20px;
         }
-
-        h1 {
-            font-size: 20px;
-            margin-bottom: 8px;
+        input, button {
+            margin: 5px;
+            padding: 8px;
         }
-
-        p {
-            font-size: 14px;
-            color: var(--tg-theme-hint-color);
-        }
-
-        .input-group {
-            position: relative;
-            margin-top: 24px;
-        }
-
-        .input-group input {
-            width: 100%;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid var(--tg-theme-hint-color);
-            background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-            font-size: 16px;
-            outline: none;
-            box-sizing: border-box;
-        }
-
-        .input-group label {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            background: var(--tg-theme-bg-color);
-            padding: 0 4px;
-            color: var(--tg-theme-hint-color);
-            font-size: 14px;
-            transition: all 0.2s ease-out;
-            pointer-events: none;
-        }
-
-        .input-group input:focus + label,
-        .input-group input:not(:placeholder-shown) + label {
-            top: 0px;
-            left: 12px;
-            font-size: 12px;
-            color: var(--tg-theme-accent-text-color);
-        }
-
-        .input-group input:focus {
-            border: 1px solid var(--tg-theme-accent-text-color);
-            box-shadow: 0 0 0 1px var(--tg-theme-accent-text-color);
-        }
-
-        .input-group input:not(:focus):not(:placeholder-shown) + label { 
-            color: var(--tg-theme-hint-color);
-        }
-
-        .button-container {
-    position: fixed;
-    bottom: 7.5vw;
-    left: 0;
-    right: 0;
-    display: flex;
-    justify-content: flex-end;
-    box-sizing: border-box;
-    z-index: 1000;
-}
-
-.submit-btn {
-    background-color: var(--tg-theme-button-color);
-    color: var(--tg-theme-button-text-color);
-    border: none;
-    border-radius: 50%;
-    width: 60px;
-    height: 60px;
-    font-size: 24px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    cursor: pointer;
-}
-
-        .emoji {
-            width: 150px;
-            height: 144px;
-            margin-bottom: 16px;
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-/* Исходное положение */
-.container, .schedule {
-    transition: transform 0.6s ease-in-out, opacity 0.6s ease-in-out;
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-}
-
-/* Контейнер формы */
-.container {
-    transform: translateX(0);
-    opacity: 1;
-    z-index: 2;
-}
-
-/* Экран расписания */
-.schedule {
-    display: none;
-    align-items: center;
-    justify-content: center;
-    font-size: 24px;
-    font-weight: bold;
-    text-align: center;
-    height: 100vh;
-    transform: translateX(100%);
-    opacity: 0;
-    z-index: 1;
-}
-
-/* Анимация при переключении */
-.container.hidden {
-    transform: translateX(-100%);
-    opacity: 0;
-    z-index: 1;
-}
-
-.schedule.visible {
-    display: flex;
-    transform: translateX(0);
-    opacity: 1;
-    z-index: 2;
-}
     </style>
 </head>
 <body>
-    <!-- Форма для ввода данных -->
-    <div class="container">
-        <img src="IMG_20241227_173259_289.png" class="emoji">
-        <h1>Введите данные</h1>
-        <p>Пожалуйста, введите свои ФИО.</p>
-
-        <div class="input-group">
-            <input id="surname" type="text" placeholder=" " required>
-            <label for="surname">Фамилия</label>
-        </div>
-
-        <div class="input-group">
-            <input id="name" type="text" placeholder=" " required>
-            <label for="name">Имя</label>
-        </div>
-
-        <div class="input-group">
-            <input id="patronymic" type="text" placeholder=" " required>
-            <label for="patronymic">Отчество</label>
-        </div>
-   
-        <div class="button-container">
-    <button class="submit-btn" onclick="submitData()">
-        <svg class="feather feather-arrow-right" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24">
-            <line x1="5" x2="19" y1="12" y2="12"></line>
-            <polyline points="12 5 19 12 12 19"></polyline>
-        </svg>
-    </button>
-</div>
+    <h1>Telegram CloudStorage API Example</h1>
+    <div>
+        <h3>Сохранить элемент</h3>
+        <input type="text" id="saveKey" placeholder="Введите ключ">
+        <input type="text" id="saveValue" placeholder="Введите значение">
+        <button onclick="saveItem()">Сохранить</button>
     </div>
 
-    <!-- Экран расписания -->
-    <div class="schedule" id="scheduleScreen">
-        Расписание
+    <div>
+        <h3>Получить элемент</h3>
+        <input type="text" id="getKey" placeholder="Введите ключ">
+        <button onclick="getItem()">Получить</button>
+        <p id="getResult"></p>
+    </div>
+
+    <div>
+        <h3>Удалить элемент</h3>
+        <input type="text" id="deleteKey" placeholder="Введите ключ">
+        <button onclick="deleteItem()">Удалить</button>
+    </div>
+
+    <div>
+        <h3>Получить все ключи</h3>
+        <button onclick="getAllKeys()">Получить ключи</button>
+        <p id="keysResult"></p>
     </div>
 
     <script>
-        Telegram.WebApp.ready();
-
-// Флаг для отслеживания нового пользователя
-let isNewUser = false;
-
-// 📌 Проверка Telegram ID на сервере при запуске приложения
-async function checkTelegramId() {
-    const TG_ID = Telegram.WebApp.initDataUnsafe?.user?.id || null;
-
-    if (!TG_ID) {
-        Telegram.WebApp.showPopup({
-            title: 'Ошибка',
-            message: 'Не удалось получить Telegram ID.',
-            buttons: [{ id: 'ok', text: 'OK' }]
-        });
-        return;
-    }
-
-    try {
-        console.log('🔍 Проверка Telegram ID на сервере...');
-        const response = await fetch('https://telegram-bot-server-hbtr.onrender.com/api/check-telegram-id', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telegramId: TG_ID })
-        });
-
-        const result = await response.json();
-        console.log('✅ Ответ сервера (проверка ID):', result);
-
-        if (result.success) {
-            // Если ID найден, показываем расписание без анимации
-            showSchedule(false); // false = без анимации
+        // Проверяем, доступен ли Web App API
+        if (window.Telegram && Telegram.WebApp) {
+            Telegram.WebApp.ready();
         } else {
-            // Если ID не найден, показываем форму регистрации
-            showForm();
+            alert('Telegram WebApp API не доступен');
         }
-    } catch (error) {
-        console.error('❌ Ошибка при проверке Telegram ID:', error);
-        Telegram.WebApp.showPopup({
-            title: 'Ошибка',
-            message: `Ошибка при проверке Telegram ID: ${error.message}`,
-            buttons: [{ id: 'ok', text: 'OK' }]
-        });
-        showForm();
-    }
-}
 
-// 📌 Функция для отображения расписания
-function showSchedule(withAnimation = false) {
-    const formContainer = document.querySelector('.container');
-    const scheduleContainer = document.querySelector('.schedule');
+        // Сохранение элемента
+        function saveItem() {
+            const key = document.getElementById('saveKey').value;
+            const value = document.getElementById('saveValue').value;
 
-    scheduleContainer.style.display = 'flex';
-
-    if (withAnimation) {
-        // Анимация при первом входе (регистрация)
-        formContainer.classList.add('hidden');
-        scheduleContainer.classList.add('visible');
-    } else {
-        // Мгновенное отображение при повторном входе
-        formContainer.style.display = 'none';
-        scheduleContainer.classList.add('visible');
-        scheduleContainer.style.opacity = '1';
-        scheduleContainer.style.transform = 'translateX(0)';
-        scheduleContainer.style.zIndex = '2';
-    }
-}
-
-// 📌 Функция для отображения формы регистрации
-function showForm() {
-    document.querySelector('.container').style.display = 'block';
-    document.querySelector('.schedule').style.display = 'none';
-}
-
-// 📌 Отправка данных для регистрации
-async function submitData() {
-    const TG_ID = Telegram.WebApp.initDataUnsafe?.user?.id || null;
-    const surname = document.getElementById('surname').value.trim();
-    const name = document.getElementById('name').value.trim();
-    const patronymic = document.getElementById('patronymic').value.trim();
-
-    if (!surname || !name || !patronymic || !TG_ID) {
-        Telegram.WebApp.showPopup({
-            title: 'Ошибка',
-            message: 'Пожалуйста, заполните все поля.',
-            buttons: [{ id: 'ok', text: 'OK' }]
-        });
-        return;
-    }
-
-    try {
-        console.log('🚀 Отправка данных на сервер...');
-        const response = await fetch('https://telegram-bot-server-hbtr.onrender.com/api/bind-telegram-id', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telegramId: TG_ID, surname, name, patronymic })
-        });
-
-        const result = await response.json();
-        console.log('✅ Ответ сервера (привязка данных):', result);
-
-        if (result.success) {
-            Telegram.WebApp.showPopup({
-                title: 'Успех',
-                message: result.message,
-                buttons: [{ id: 'ok', text: 'OK' }]
-            });
-
-            isNewUser = true; // Устанавливаем флаг нового пользователя
-
-            setTimeout(() => {
-                showSchedule(true); // true = с анимацией
-            }, 500);
-        } else {
-            Telegram.WebApp.showPopup({
-                title: 'Ошибка',
-                message: result.message || 'Ошибка на сервере',
-                buttons: [{ id: 'ok', text: 'OK' }]
+            Telegram.WebApp.CloudStorage.setItem(key, value, (error, success) => {
+                if (error) {
+                    Telegram.WebApp.showAlert('Ошибка сохранения: ' + error);
+                } else {
+                    Telegram.WebApp.showAlert('Элемент успешно сохранён');
+                }
             });
         }
-    } catch (error) {
-        console.error('❌ Ошибка при отправке данных:', error);
-        Telegram.WebApp.showPopup({
-            title: 'Ошибка',
-            message: `Ошибка при отправке данных: ${error.message}`,
-            buttons: [{ id: 'ok', text: 'OK' }]
-        });
-    }
-}
 
-// 📌 Инициализация
-document.querySelector('.container').style.display = 'none';
-document.querySelector('.schedule').style.display = 'none';
-checkTelegramId();
+        // Получение элемента
+        function getItem() {
+            const key = document.getElementById('getKey').value;
 
-// 📌 Привязываем обработчик к кнопке
-document.querySelector('.submit-btn').addEventListener('click', submitData);
+            Telegram.WebApp.CloudStorage.getItem(key, (error, value) => {
+                if (error) {
+                    Telegram.WebApp.showAlert('Ошибка: ' + error);
+                } else {
+                    document.getElementById('getResult').innerText = 'Значение: ' + value;
+                    Telegram.WebApp.showAlert('Значение: ' + value);
+                }
+            });
+        }
+
+        // Удаление элемента
+        function deleteItem() {
+            const key = document.getElementById('deleteKey').value;
+
+            Telegram.WebApp.CloudStorage.removeItem(key, (error, success) => {
+                if (error) {
+                    Telegram.WebApp.showAlert('Ошибка удаления: ' + error);
+                } else {
+                    Telegram.WebApp.showAlert('Элемент успешно удалён');
+                }
+            });
+        }
+
+        // Получение всех ключей
+        function getAllKeys() {
+            Telegram.WebApp.CloudStorage.getKeys((error, keys) => {
+                if (error) {
+                    Telegram.WebApp.showAlert('Ошибка: ' + error);
+                } else {
+                    const keysText = keys.join(', ');
+                    document.getElementById('keysResult').innerText = 'Ключи: ' + keysText;
+                    Telegram.WebApp.showAlert('Ключи: ' + keysText);
+                }
+            });
+        }
     </script>
 </body>
 </html>
