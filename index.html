@@ -2,110 +2,184 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telegram CloudStorage Example</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <meta name="viewport" content="width=device-width, user-scalable=no">
+    <title>Tic-Tac-Toe</title>
+    <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <style>
         body {
+            -webkit-tap-highlight-color: transparent;
             font-family: Arial, sans-serif;
             text-align: center;
-            margin: 20px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
         }
-        input, button {
-            margin: 5px;
-            padding: 8px;
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            position: relative;
+            margin: auto;
+            gap: 10px;
+        }
+
+        .board::before,
+        .board::after {
+            content: '';
+            position: absolute;
+            background-color: var(--tg-theme-section-separator-color);
+            border-radius: 10px;            
+        }
+
+        .board::before {
+            width: 320px;
+            height: 10px;
+            top: 100px;
+            left: 0;
+            box-shadow: 0 110px 0 0 var(--tg-theme-section-separator-color);            
+        }
+
+        .board::after {
+            width: 10px;
+            height: 320px;
+            left: 100px;
+            top: 0;
+            box-shadow: 110px 0 0 0 var(--tg-theme-section-separator-color);
+        }
+
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100px;
+            height: 100px;
+            font-size: 2.5em;
+            font-family: "Segoe UI Emoji", "Noto Color Emoji", "Apple Color Emoji", sans-serif;
+            cursor: pointer;
+        }
+
+        .cell.taken {
+            cursor: not-allowed;
         }
     </style>
 </head>
 <body>
-    <h1>Telegram CloudStorage API Example</h1>
-    <div>
-        <h3>Сохранить элемент</h3>
-        <input type="text" id="saveKey" placeholder="Введите ключ">
-        <input type="text" id="saveValue" placeholder="Введите значение">
-        <button onclick="saveItem()">Сохранить</button>
-    </div>
-
-    <div>
-        <h3>Получить элемент</h3>
-        <input type="text" id="getKey" placeholder="Введите ключ">
-        <button onclick="getItem()">Получить</button>
-        <p id="getResult"></p>
-    </div>
-
-    <div>
-        <h3>Удалить элемент</h3>
-        <input type="text" id="deleteKey" placeholder="Введите ключ">
-        <button onclick="deleteItem()">Удалить</button>
-    </div>
-
-    <div>
-        <h3>Получить все ключи</h3>
-        <button onclick="getAllKeys()">Получить ключи</button>
-        <p id="keysResult"></p>
-    </div>
+    <div class="board" id="board"></div>
 
     <script>
-        // Проверяем, доступен ли Web App API
-        if (window.Telegram && Telegram.WebApp) {
-            Telegram.WebApp.ready();
-        } else {
-            alert('Telegram WebApp API не доступен');
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
+                tg.expand();
+                console.log('Telegram WebApp успешно инициализирован');
+            } else {
+                console.warn('Telegram WebApp API недоступен');
+            }
+        });
 
-        // Сохранение элемента
-        function saveItem() {
-            const key = document.getElementById('saveKey').value;
-            const value = document.getElementById('saveValue').value;
+        const board = document.getElementById('board');
+        let currentPlayer = '❌';
+        let boardState = Array(9).fill(null);
+        let gameActive = true;
 
-            Telegram.WebApp.CloudStorage.setItem(key, value, (error, success) => {
-                if (error) {
-                    Telegram.WebApp.showAlert('Ошибка сохранения: ' + error);
-                } else {
-                    Telegram.WebApp.showAlert('Элемент успешно сохранён');
-                }
+        function createBoard() {
+            board.innerHTML = '';
+            boardState.forEach((cell, index) => {
+                const cellDiv = document.createElement('div');
+                cellDiv.classList.add('cell');
+                cellDiv.dataset.index = index;
+                cellDiv.addEventListener('click', onCellClick);
+                board.appendChild(cellDiv);
             });
         }
 
-        // Получение элемента
-        function getItem() {
-            const key = document.getElementById('getKey').value;
+        function onCellClick(event) {
+    const index = event.target.dataset.index;
 
-            Telegram.WebApp.CloudStorage.getItem(key, (error, value) => {
-                if (error) {
-                    Telegram.WebApp.showAlert('Ошибка: ' + error);
-                } else {
-                    document.getElementById('getResult').innerText = 'Значение: ' + value;
-                    Telegram.WebApp.showAlert('Значение: ' + value);
-                }
+    if (boardState[index] || !gameActive) return;
+
+    boardState[index] = currentPlayer;
+    event.target.textContent = currentPlayer;
+    event.target.classList.add('taken');
+
+    // Виброотклик при каждом ходе
+    if (window.Telegram && Telegram.WebApp.HapticFeedback) {
+        Telegram.WebApp.HapticFeedback.impactOccurred('heavy');
+Telegram.WebApp.HapticFeedback.notificationOccurred('success');
+    }
+
+    if (checkWinner()) {
+        gameActive = false;
+        showEndGameModal(`${currentPlayer} победил! 🎉`);
+        return;
+    }
+
+    if (!boardState.includes(null)) {
+        gameActive = false;
+        showEndGameModal('Ничья! 🤝');
+        return;
+    }
+
+    currentPlayer = currentPlayer === '❌' ? '⭕' : '❌';
+}
+
+        function checkWinner() {
+            const winPatterns = [
+                [0, 1, 2],
+                [3, 4, 5],
+                [6, 7, 8],
+                [0, 3, 6],
+                [1, 4, 7],
+                [2, 5, 8],
+                [0, 4, 8],
+                [2, 4, 6]
+            ];
+
+            return winPatterns.some(pattern => {
+                const [a, b, c] = pattern;
+                return boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c];
             });
         }
 
-        // Удаление элемента
-        function deleteItem() {
-            const key = document.getElementById('deleteKey').value;
+        function showEndGameModal(message) {
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
 
-            Telegram.WebApp.CloudStorage.removeItem(key, (error, success) => {
-                if (error) {
-                    Telegram.WebApp.showAlert('Ошибка удаления: ' + error);
-                } else {
-                    Telegram.WebApp.showAlert('Элемент успешно удалён');
-                }
-            });
+                gameActive = false;
+
+                tg.showPopup({
+                    title: 'Игра окончена',
+                    message: message,
+                    buttons: [
+                        { id: 'restart', type: 'default', text: 'Начать заново' }
+                    ]
+                }, (buttonId) => {
+                    if (buttonId === 'restart') {
+                        resetGame();
+                    }
+                });
+                tg.onEvent('popupClosed', () => {
+                    resetGame();
+                });
+            } else {
+                resetGame();
+            }
         }
 
-        // Получение всех ключей
-        function getAllKeys() {
-            Telegram.WebApp.CloudStorage.getKeys((error, keys) => {
-                if (error) {
-                    Telegram.WebApp.showAlert('Ошибка: ' + error);
-                } else {
-                    const keysText = keys.join(', ');
-                    document.getElementById('keysResult').innerText = 'Ключи: ' + keysText;
-                    Telegram.WebApp.showAlert('Ключи: ' + keysText);
-                }
-            });
+        function resetGame() {
+            boardState = Array(9).fill(null);
+            currentPlayer = '❌';
+            gameActive = true;
+            createBoard();
         }
+
+        createBoard();
     </script>
 </body>
 </html>
