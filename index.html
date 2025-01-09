@@ -301,6 +301,7 @@ function showForm() {
 
 // 📌 Отправка данных для регистрации
 async function submitData() {
+Telegram.WebApp.HapticFeedback.impactOccurred('light');
     const TG_ID = Telegram.WebApp.initDataUnsafe?.user?.id || null;
     const surname = document.getElementById('surname').value.trim();
     const name = document.getElementById('name').value.trim();
