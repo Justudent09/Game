@@ -225,7 +225,17 @@ Telegram.WebApp.BackButton.show();
 
 Telegram.WebApp.SettingsButton.show();
 
+Telegram.WebApp.MainButton.setParams({
+    text: "Продолжить"
+});
 
+Telegram.WebApp.BottomButton.setParams({
+    text: "Отмена",
+    type: "secondary",
+    position: "right",
+    is_visible: true
+});
+Telegram.WebApp.BottomButton.show();
 
 // Флаг для отслеживания нового пользователя
 let isNewUser = false;
