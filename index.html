@@ -11,25 +11,24 @@
         Telegram.WebApp.ready();
         Telegram.WebApp.BackButton.show();
         Telegram.WebApp.SettingsButton.show();
-        // Настроить основную кнопку
-Telegram.WebApp.MainButton.setParams({
-    text: "Продолжить",      // Текст основной кнопки
-    color: "#00FF00",        // Зелёный цвет
-    text_color: "#FFFFFF",   // Белый текст
-    position: "right",       // Справа от второстепенной кнопки
-    is_visible: true         // Сделать кнопку видимой
-});
-Telegram.WebApp.MainButton.show();
+   
+        Telegram.WebApp.MainButton.setParams({
+            text: "Продолжить",      
+            color: "#00FF00",        
+            text_color: "#FFFFFF",   
+            position: "right",     
+            is_visible: true        
+        });
+        Telegram.WebApp.MainButton.show();
 
-// Настроить второстепенную кнопку
-Telegram.WebApp.MainButton.setParams({
-    text: "Отмена",
-    color: "#FF0000",        // Красный цвет
-    text_color: "#FFFFFF",   // Белый текст
-    position: "left",        // Слева от основной кнопки
-    is_visible: true
-});
-Telegram.WebApp.MainButton.show();
+        Telegram.WebApp.MainButton.setParams({
+            text: "Отмена",
+            color: "#FF0000",       
+            text_color: "#FFFFFF",  
+            position: "left",        
+            is_visible: true
+        });
+        Telegram.WebApp.MainButton.show();
 
 // Обработчики для двух кнопок
 Telegram.WebApp.MainButton.onClick(() => {
