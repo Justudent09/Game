@@ -1,58 +1,54 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Telegram Emoji Selector</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-      margin: 0;
-      background-color: #f9f9f9;
-    }
+function checkWinner() {
+            const winPatterns = [
+                [0, 1, 2],
+                [3, 4, 5],
+                [6, 7, 8],
+                [0, 3, 6],
+                [1, 4, 7],
+                [2, 5, 8],
+                [0, 4, 8],
+                [2, 4, 6]
+            ];
 
-    .button {
-      padding: 10px 20px;
-      background-color: #007bff;
-      color: #fff;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin-top: 20px;
-    }
-
-    .button:hover {
-      background-color: #0056b3;
-    }
-  </style>
-</head>
-<body>
-  <button class="button" id="setEmojiStatus">Установить эмодзи-статус</button>
-
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-  <script>
-    // Вызов встроенного интерфейса выбора эмодзи
-    document.getElementById('setEmojiStatus').addEventListener('click', () => {
-      if (typeof Telegram === 'undefined' || !Telegram.WebApp) {
-        alert('Telegram WebApp API не доступен');
-        return;
-      }
-
-      // Открываем встроенный выбор эмодзи Telegram
-      Telegram.WebApp.setEmojiStatus(null, {}, (success) => {
-        if (success) {
-          alert('Эмодзи-статус успешно установлен!');
-        } else {
-          alert('Не удалось установить эмодзи-статус.');
+            return winPatterns.some(pattern => {
+                const [a, b, c] = pattern;
+                return boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c];
+            });
         }
-      });
-    });
-  </script>
+
+        function showEndGameModal(message) {
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
+
+                gameActive = false;
+
+                tg.showPopup({
+                    title: 'Игра окончена',
+                    message: message,
+                    buttons: [
+                        { id: 'restart', type: 'default', text: 'Начать заново' }
+                    ]
+                }, (buttonId) => {
+                    if (buttonId === 'restart') {
+                        resetGame();
+                    }
+                });
+                tg.onEvent('popupClosed', () => {
+                    resetGame();
+                });
+            } else {
+                resetGame();
+            }
+        }
+
+        function resetGame() {
+            boardState = Array(9).fill(null);
+            currentPlayer = '❌';
+            gameActive = true;
+            createBoard();
+        }
+
+        createBoard();
+    </script>
 </body>
 </html>
