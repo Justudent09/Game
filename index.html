@@ -223,6 +223,12 @@
         Telegram.WebApp.ready();
 Telegram.WebApp.BackButton.show();
 
+Telegram.WebApp.SettingsButton.show();
+
+
+// Скрыть кнопку "Настройки", если она больше не нужна
+Telegram.WebApp.SettingsButton.hide();
+
 // Флаг для отслеживания нового пользователя
 let isNewUser = false;
 
