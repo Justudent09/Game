@@ -11,11 +11,36 @@
         Telegram.WebApp.ready();
         Telegram.WebApp.BackButton.show();
         Telegram.WebApp.SettingsButton.show();
-        Telegram.WebApp.MainButton.show();
-        Telegram.WebApp.MainButton.setParams({
-            text: "Кнопочка",
-            has_shine_effect: true
-        });
+        // Настроить основную кнопку
+Telegram.WebApp.BottomButton.setParams({
+    text: "Продолжить",      // Текст основной кнопки
+    color: "#00FF00",        // Зелёный цвет
+    text_color: "#FFFFFF",   // Белый текст
+    position: "right",       // Справа от второстепенной кнопки
+    is_visible: true         // Сделать кнопку видимой
+});
+Telegram.WebApp.BottomButton.show();
+
+// Настроить второстепенную кнопку
+Telegram.WebApp.BottomButton.setParams({
+    text: "Отмена",
+    color: "#FF0000",        // Красный цвет
+    text_color: "#FFFFFF",   // Белый текст
+    position: "left",        // Слева от основной кнопки
+    is_visible: true
+});
+Telegram.WebApp.BottomButton.show();
+
+// Обработчики для двух кнопок
+Telegram.WebApp.BottomButton.onClick(() => {
+    if (Telegram.WebApp.BottomButton.text === "Продолжить") {
+        console.log("Кнопка 'Продолжить' нажата");
+        // Ваше действие
+    } else if (Telegram.WebApp.BottomButton.text === "Отмена") {
+        console.log("Кнопка 'Отмена' нажата");
+        // Ваше действие
+    }
+});
     </script>
 </body>
 </html>
