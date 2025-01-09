@@ -13,30 +13,10 @@
         Telegram.WebApp.SettingsButton.show();
    
         Telegram.WebApp.MainButton.setParams({
-            text: "Продолжить",      
-            color: "#00FF00",        
-            text_color: "#FFFFFF",   
-            position: "right",     
+            text: "➖➖➖➖➖",           
             is_visible: true        
         });
         Telegram.WebApp.MainButton.show();
-
-        Telegram.WebApp.MainButton.setParams({
-            text: "Отмена",
-            color: "#FF0000",       
-            text_color: "#FFFFFF",  
-            position: "left",        
-            is_visible: true
-        });
-        Telegram.WebApp.MainButton.show();
-
-        Telegram.WebApp.MainButton.onClick(() => {
-            if (Telegram.WebApp.MainButton.text === "Продолжить") {
-                console.log("Кнопка 'Продолжить' нажата");
-            } else if (Telegram.WebApp.MainButton.text === "Отмена") {
-                console.log("Кнопка 'Отмена' нажата");
-            }
-        });
     </script>
 </body>
 </html>
