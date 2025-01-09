@@ -1,185 +1,56 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, user-scalable=no">
-    <title>Tic-Tac-Toe</title>
-    <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
-    <style>
-        body {
-            -webkit-tap-highlight-color: transparent;
-            font-family: Arial, sans-serif;
-            text-align: center;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Telegram Emoji Selector</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #f9f9f9;
+    }
 
-        .board {
-            display: grid;
-            grid-template-columns: repeat(3, 100px);
-            grid-template-rows: repeat(3, 100px);
-            position: relative;
-            margin: auto;
-            gap: 10px;
-        }
+    .button {
+      padding: 10px 20px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
 
-        .board::before,
-        .board::after {
-            content: '';
-            position: absolute;
-            background-color: var(--tg-theme-section-separator-color);
-            border-radius: 10px;            
-        }
-
-        .board::before {
-            width: 320px;
-            height: 10px;
-            top: 100px;
-            left: 0;
-            box-shadow: 0 110px 0 0 var(--tg-theme-section-separator-color);            
-        }
-
-        .board::after {
-            width: 10px;
-            height: 320px;
-            left: 100px;
-            top: 0;
-            box-shadow: 110px 0 0 0 var(--tg-theme-section-separator-color);
-        }
-
-        .cell {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 100px;
-            height: 100px;
-            font-size: 2.5em;
-            font-family: "Segoe UI Emoji", "Noto Color Emoji", "Apple Color Emoji", sans-serif;
-            cursor: pointer;
-        }
-
-        .cell.taken {
-            cursor: not-allowed;
-        }
-    </style>
+    .button:hover {
+      background-color: #0056b3;
+    }
+  </style>
 </head>
 <body>
-    <div class="board" id="board"></div>
+  <button class="button" id="setEmojiStatus">Установить эмодзи-статус</button>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            if (window.Telegram && window.Telegram.WebApp) {
-                const tg = window.Telegram.WebApp;
-                tg.expand();
-                console.log('Telegram WebApp успешно инициализирован');
-            } else {
-                console.warn('Telegram WebApp API недоступен');
-            }
-        });
-
-        const board = document.getElementById('board');
-        let currentPlayer = '❌';
-        let boardState = Array(9).fill(null);
-        let gameActive = true;
-
-        function createBoard() {
-            board.innerHTML = '';
-            boardState.forEach((cell, index) => {
-                const cellDiv = document.createElement('div');
-                cellDiv.classList.add('cell');
-                cellDiv.dataset.index = index;
-                cellDiv.addEventListener('click', onCellClick);
-                board.appendChild(cellDiv);
-            });
-        }
-
-        function onCellClick(event) {
-    const index = event.target.dataset.index;
-
-    if (boardState[index] || !gameActive) return;
-
-    boardState[index] = currentPlayer;
-    event.target.textContent = currentPlayer;
-    event.target.classList.add('taken');
-
-    // Виброотклик при каждом ходе
-    if (window.Telegram && Telegram.WebApp.HapticFeedback) {
-        Telegram.WebApp.HapticFeedback.impactOccurred('heavy');
-Telegram.WebApp.HapticFeedback.notificationOccurred('success');
-    }
-
-    if (checkWinner()) {
-        gameActive = false;
-        showEndGameModal(`${currentPlayer} победил! 🎉`);
+  <script>
+    // Вызов встроенного интерфейса выбора эмодзи
+    document.getElementById('setEmojiStatus').addEventListener('click', () => {
+      if (typeof Telegram === 'undefined' || !Telegram.WebApp) {
+        alert('Telegram WebApp API не доступен');
         return;
-    }
+      }
 
-    if (!boardState.includes(null)) {
-        gameActive = false;
-        showEndGameModal('Ничья! 🤝');
-        return;
-    }
-
-    currentPlayer = currentPlayer === '❌' ? '⭕' : '❌';
-}
-
-        function checkWinner() {
-            const winPatterns = [
-                [0, 1, 2],
-                [3, 4, 5],
-                [6, 7, 8],
-                [0, 3, 6],
-                [1, 4, 7],
-                [2, 5, 8],
-                [0, 4, 8],
-                [2, 4, 6]
-            ];
-
-            return winPatterns.some(pattern => {
-                const [a, b, c] = pattern;
-                return boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c];
-            });
+      // Открываем встроенный выбор эмодзи Telegram
+      Telegram.WebApp.setEmojiStatus(null, {}, (success) => {
+        if (success) {
+          alert('Эмодзи-статус успешно установлен!');
+        } else {
+          alert('Не удалось установить эмодзи-статус.');
         }
-
-        function showEndGameModal(message) {
-            if (window.Telegram && window.Telegram.WebApp) {
-                const tg = window.Telegram.WebApp;
-
-                gameActive = false;
-
-                tg.showPopup({
-                    title: 'Игра окончена',
-                    message: message,
-                    buttons: [
-                        { id: 'restart', type: 'default', text: 'Начать заново' }
-                    ]
-                }, (buttonId) => {
-                    if (buttonId === 'restart') {
-                        resetGame();
-                    }
-                });
-                tg.onEvent('popupClosed', () => {
-                    resetGame();
-                });
-            } else {
-                resetGame();
-            }
-        }
-
-        function resetGame() {
-            boardState = Array(9).fill(null);
-            currentPlayer = '❌';
-            gameActive = true;
-            createBoard();
-        }
-
-        createBoard();
-    </script>
+      });
+    });
+  </script>
 </body>
 </html>
