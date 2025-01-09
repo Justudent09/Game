@@ -30,16 +30,13 @@
         });
         Telegram.WebApp.MainButton.show();
 
-// Обработчики для двух кнопок
-Telegram.WebApp.MainButton.onClick(() => {
-    if (Telegram.WebApp.MainButton.text === "Продолжить") {
-        console.log("Кнопка 'Продолжить' нажата");
-        // Ваше действие
-    } else if (Telegram.WebApp.MainButton.text === "Отмена") {
-        console.log("Кнопка 'Отмена' нажата");
-        // Ваше действие
-    }
-});
+        Telegram.WebApp.MainButton.onClick(() => {
+            if (Telegram.WebApp.MainButton.text === "Продолжить") {
+                console.log("Кнопка 'Продолжить' нажата");
+            } else if (Telegram.WebApp.MainButton.text === "Отмена") {
+                console.log("Кнопка 'Отмена' нажата");
+            }
+        });
     </script>
 </body>
 </html>
