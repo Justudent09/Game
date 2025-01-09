@@ -12,27 +12,6 @@
         Telegram.WebApp.BackButton.show();
         Telegram.WebApp.SettingsButton.show();
         Telegram.WebApp.MainButton.show();
-// Скрываем MainButton, если она активна
-Telegram.WebApp.MainButton.hide();
-
-// Настраиваем параметры BottomButton
-Telegram.WebApp.BottomButton.setParams({
-    text: "Назад",
-    color: "#FF0000",       // Красный цвет кнопки
-    text_color: "#FFFFFF",  // Белый текст
-    position: "left",       // Расположение (только для secondary кнопки)
-    is_visible: true        // Делаем кнопку видимой
-});
-
-// Отображаем BottomButton
-Telegram.WebApp.BottomButton.show();
-
-// Добавляем обработчик нажатия
-Telegram.WebApp.BottomButton.onClick(() => {
-    console.log("BottomButton нажата");
-    // Выполняем действие, например, закрытие приложения
-    Telegram.WebApp.close();
-});
     </script>
 </body>
 </html>
