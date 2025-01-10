@@ -21,6 +21,21 @@
             position: "left"  
         });
         Telegram.WebApp.SecondaryButton.show();
+
+        Telegram.WebApp.MainButton.onClick(() => {
+            lock();
+        });
+
+function lock() {
+  let orientation = 'portrait';
+  let de = document.documentElement;
+  if (de.requestFullscreen) { de.requestFullscreen(); }
+  else if (de.mozRequestFullScreen) { de.mozRequestFullScreen(); }
+  else if (de.webkitRequestFullscreen) { de.webkitRequestFullscreen(); }
+  else if (de.msRequestFullscreen) { de.msRequestFullscreen(); }
+
+  screen.orientation.lock(orientation);
+}
     </script>
 </body>
 </html>
