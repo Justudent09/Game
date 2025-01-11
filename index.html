@@ -129,36 +129,6 @@ main {
     background-color: #ff0;
     color: #000;
 }
-
-#app {
-    position: absolute;
-    height: 6px;
-    left: 50%;
-    margin-bottom: 15px;
-    transform: translateX(-50%);
-    overflow: hidden;
-    display: flex;
-    gap: 6px;
-}
-
-.button {
-    width: 6px;
-    height: 6px;
-    background-color: var(--tg-theme-hint-color);
-    border-radius: 3px;
-    cursor: pointer;
-    transition: 0.3s ease width;
-}
-
-.button:last-child {
-    margin-right: 0;
-}
-
-.button.active {
-    width: 18px;
-    cursor: auto; 
-    background-color: var(--tg-theme-accent-text-color);
-}
     </style>
 </head>
 <body>
@@ -177,12 +147,6 @@ main {
                 </div>
                 <div class="calendar-container" id="calendar"></div>
             </div>
-        </div>
-
-        <div id="app">
-            <div class="button active"></div>
-            <div class="button"></div>
-            <div class="button"></div>
         </div>
     </main>
     <script>
@@ -223,6 +187,9 @@ main {
       for (let d = 1; d <= daysInMonth; d++) {
         const day = document.createElement('div');
         day.classList.add('day');
+        if (Math.random() > 0.7) {
+          day.classList.add('active');
+        }
         day.textContent = d;
         days.appendChild(day);
       }
@@ -230,23 +197,6 @@ main {
       month.appendChild(days);
       calendarContainer.appendChild(month);
     }
-
-const scrollContainer = document.getElementById('horizontal-scroll');
-const scrollItems = document.querySelectorAll('.scroll-item');
-const buttons = document.querySelectorAll('#app .button');
-
-if (scrollContainer) {
-    scrollContainer.addEventListener('scroll', () => {
-        const containerWidth = scrollContainer.offsetWidth;
-        const scrollLeft = scrollContainer.scrollLeft;
-        const index = Math.round(scrollLeft / containerWidth);
-
-        scrollItems.forEach((item, i) => item.classList.toggle('active', i === index));
-        buttons.forEach((button, i) => button.classList.toggle('active', i === index));
-    });
-} else {
-    Telegram.WebApp.showAlert('⚠️ Контейнер прокрутки не найден');
-}
     </script>
 </body>
 </html>
