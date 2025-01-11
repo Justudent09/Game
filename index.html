@@ -130,6 +130,10 @@ main {
 .day.active {
     background-color: var(--tg-theme-accent-text-color);
 }
+
+.day.active1 {
+    background-color: orange;
+}
     </style>
 </head>
 <body>
@@ -190,6 +194,9 @@ main {
         day.classList.add('day');
         if (Math.random() > 0.7) {
           day.classList.add('active');
+        }
+        if (Math.random() > 0.7) {
+          day.classList.add('active1');
         }
         day.textContent = d;
         days.appendChild(day);
