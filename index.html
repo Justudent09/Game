@@ -74,35 +74,6 @@ main {
     line-height: 1.2;
     color: var(--tg-theme-hint-color);
 }
-
-#app {
-    position: absolute;
-    height: 4px;
-    left: 50%;
-    transform: translateX(-50%);
-    overflow: hidden;
-    display: flex;
-    gap: 4px;
-}
-
-.button {
-    width: 4px;
-    height: 4px;
-    background-color: var(--tg-theme-hint-color);
-    border-radius: 2px;
-    cursor: pointer;
-    transition: 0.3s ease width;
-}
-
-.button:last-child {
-    margin-right: 0;
-}
-
-.button.active {
-    width: 12px;
-    cursor: auto; 
-    background-color: var(--tg-theme-accent-text-color);
-}
     </style>
 </head>
 <body>
@@ -127,32 +98,11 @@ main {
             </div>
         </div>
 
-        <div id="app">
-            <div class="button active"></div>
-            <div class="button"></div>
-            <div class="button"></div>
-        </div>
+        <hr style="border: 0; height: 1px; background-color: #333;">
     </main>
     <script>
 Telegram.WebApp.ready();
 Telegram.WebApp.lockOrientation();
-
-const scrollContainer = document.getElementById('horizontal-scroll');
-const scrollItems = document.querySelectorAll('.scroll-item');
-const buttons = document.querySelectorAll('#app .button');
-
-if (scrollContainer) {
-    scrollContainer.addEventListener('scroll', () => {
-        const containerWidth = scrollContainer.offsetWidth;
-        const scrollLeft = scrollContainer.scrollLeft;
-        const index = Math.round(scrollLeft / containerWidth);
-
-        scrollItems.forEach((item, i) => item.classList.toggle('active', i === index));
-        buttons.forEach((button, i) => button.classList.toggle('active', i === index));
-    });
-} else {
-    Telegram.WebApp.showAlert('⚠️ Контейнер прокрутки не найден');
-}
     </script>
 </body>
 </html>
