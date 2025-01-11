@@ -6,7 +6,102 @@
     <title>Shedule</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+* {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
 
+body {
+    background-color: var(--tg-theme-bg-color);
+    color: var(--tg-theme-text-color);
+    color-scheme: var(--tg-color-scheme);
+    touch-action: none;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+main {
+    overflow: hidden;
+    touch-action: none;
+}
+
+
+.horizontal-scroll {
+    width: 100vw;
+    height: 15vh;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory; 
+    scroll-behavior: smooth; 
+    white-space: nowrap; 
+    scrollbar-width: none; 
+    -ms-overflow-style: none; 
+    touch-action: pan-x;
+}
+
+.horizontal-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.scroll-container {
+    display: flex;
+    flex-wrap: nowrap;
+}
+
+.scroll-item {
+    flex: 0 0 100vw;
+    height: 15vh; 
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    text-align: center;
+    scroll-snap-align: start; 
+    scroll-snap-stop: always; 
+    box-sizing: border-box; 
+    transition: background-color 0.3s ease;
+}
+
+.scroll-item div {
+    line-height: 1.2;
+    color: var(--tg-theme-hint-color);
+}
+
+#app {
+    position: absolute;
+    height: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    overflow: hidden;
+    display: flex;
+    gap: 4px;
+}
+
+.button {
+    width: 4px;
+    height: 4px;
+    background-color: var(--tg-theme-hint-color);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: 0.3s ease width;
+}
+
+.button:last-child {
+    margin-right: 0;
+}
+
+.button.active {
+    width: 12px;
+    cursor: auto; 
+    background-color: var(--tg-theme-accent-text-color);
+}
     </style>
 </head>
 <body>
