@@ -128,6 +128,35 @@ main {
     background-color: #ff0;
     color: #000;
 }
+
+#app {
+    position: absolute;
+    height: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    overflow: hidden;
+    display: flex;
+    gap: 4px;
+}
+
+.button {
+    width: 4px;
+    height: 4px;
+    background-color: var(--tg-theme-hint-color);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: 0.3s ease width;
+}
+
+.button:last-child {
+    margin-right: 0;
+}
+
+.button.active {
+    width: 12px;
+    cursor: auto; 
+    background-color: var(--tg-theme-accent-text-color);
+}
     </style>
 </head>
 <body>
