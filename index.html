@@ -34,7 +34,7 @@ main {
 
 .horizontal-scroll {
     width: 100vw;
-    height: 200px;
+    height: 221px;
     margin-top: 20vh;
     overflow-x: auto;
     overflow-y: hidden;
@@ -53,26 +53,84 @@ main {
 .scroll-container {
     display: flex;
     flex-wrap: nowrap;
+    gap: 15px;
 }
 
 .scroll-item {
-    flex: 0 0 300vw;
-    height: 200px; 
+    flex: 0 0 100px;
+    height: 221px; 
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
     font-size: 16px;
-    text-align: center;
     scroll-snap-align: start; 
     scroll-snap-stop: always; 
     box-sizing: border-box; 
     transition: background-color 0.3s ease;
+    gap: 3px;
 }
 
 .scroll-item div {
-    line-height: 1.2;
-    color: var(--tg-theme-hint-color);
+    display: flex;
+    height: 25px;
+    justify-content: center;    
+    align-items: center;
+}
+
+.calendar-container {
+    display: flex;
+    flex: 1;
+    height: 221px;
+}
+
+.month {
+    flex: none;
+    width: auto;
+    scroll-snap-align: start;
+    margin-right: 30px;
+    display: flex;
+    flex-direction: column;
+}
+
+.month-title {
+    font-size: 16px;
+    margin-bottom: 7px;
+}
+
+.days {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    height: 193px;
+    gap: 3px
+}
+    
+.day-none {
+    visibility: hidden;
+    width: 25px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #333;
+    color: #fff;
+    border-radius: 5px;
+}
+
+.day {
+    width: 25px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #333;
+    color: #fff;
+    border-radius: 5px;
+    font-size: 14px;
+}
+
+.day.active {
+    background-color: #ff0;
+    color: #000;
 }
     </style>
 </head>
@@ -81,18 +139,66 @@ main {
         <div class="horizontal-scroll" id="horizontal-scroll">
             <div class="scroll-container">
                 <div class="scroll-item">
-                    <div style="font-size: 25px; margin-bottom: 10px; color: var(--tg-theme-text-color);">47Par</div>
-                    <div>Самый простой способ просмотра</div>
-                    <div>расписания.</div>
+                    <div></div>
+                    <div>Пнд</div>
+                    <div>Втр</div>
+                    <div>Срд</div>
+                    <div>Чтв</div>
+                    <div>Птн</div>
+                    <div>Сбт</div>
+                    <div>Вск</div>
                 </div>
+                <div class="calendar-container" id="calendar"></div>
             </div>
         </div>
 
-        <hr style="border: 0; width: 80vw; height: 1px; background-color: var(--tg-theme-hint-color);">
+        <hr style="border: 0; width: 80vw; height: 1px; background-color: red;">
     </main>
     <script>
-Telegram.WebApp.ready();
-Telegram.WebApp.lockOrientation();
+const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth();
+
+    const monthNames = [
+      "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
+      "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"
+    ];
+
+    const calendarContainer = document.getElementById('calendar');
+
+    for (let m = currentMonth; m < 12; m++) {
+      const month = document.createElement('div');
+      month.classList.add('month');
+
+      const monthTitle = document.createElement('div');
+      monthTitle.classList.add('month-title');
+      monthTitle.textContent = monthNames[m];
+      month.appendChild(monthTitle);
+
+      const days = document.createElement('div');
+      days.classList.add('days');
+      const daysInMonth = new Date(currentYear, m + 1, 0).getDate();
+      const firstDayOfWeek = new Date(currentYear, m, 1).getDay();
+      const offset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
+
+      // Генерация пустых блоков перед первым днем месяца
+      for (let i = 0; i < offset; i++) {
+        const emptyDay = document.createElement('div');
+        emptyDay.classList.add('day-none');
+        days.appendChild(emptyDay);
+      }
+
+      // Генерация дней месяца
+      for (let d = 1; d <= daysInMonth; d++) {
+        const day = document.createElement('div');
+        day.classList.add('day');
+        day.textContent = d;
+        days.appendChild(day);
+      }
+
+      month.appendChild(days);
+      calendarContainer.appendChild(month);
+    }
     </script>
 </body>
 </html>
