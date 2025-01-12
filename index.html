@@ -140,10 +140,6 @@ main {
 .day.active2 {
     background-color: color-mix(in srgb, var(--tg-theme-accent-text-color) 50%, black 50%);
 }
-
-.day.active3 {
-    background-color: color-mix(in srgb, var(--tg-theme-accent-text-color) 30%, black 70%);
-}
     </style>
 </head>
 <body>
@@ -215,10 +211,6 @@ main {
         if ((a === 0)&&(Math.random() > 0.5)) {
           a = 1;
           day.classList.add('active2');
-        }
-        if ((a === 0)&&(Math.random() > 0.4)) {
-          a = 1;
-          day.classList.add('active3');
         }
         day.textContent = d;
         days.appendChild(day);
