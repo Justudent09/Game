@@ -140,6 +140,37 @@ main {
 .day.active2 {
     background-color: color-mix(in srgb, var(--tg-theme-accent-text-color) 50%, black 50%);
 }
+
+.lines {
+    display: flex;
+    width: 83vw;
+    margin-left: 8.5vw;
+    margin-top: 20px;
+    flex-direction: row;
+    gap: 1vw;
+}
+    
+.line {
+    width: 20vw;
+    height: 20px;
+    border-radius: 5px;
+}
+    
+.nums {
+    display: flex;
+    width: 83vw;
+    margin-left: 8.5vw;
+    flex-direction: row;
+    gap: 1vw;
+}
+    
+.num {
+    display: flex;
+    width: 20vw;
+    height: 20px;
+    align-items: center;
+    justify-content: center;
+}
     </style>
 </head>
 <body>
@@ -158,6 +189,20 @@ main {
                 </div>
                 <div class="calendar-container" id="calendar"></div>
             </div>
+        </div>
+
+        <div class="lines">
+            <div class="line" style="background-color: color-mix(in srgb, var(--tg-theme-accent-text-color) 25%, black 75%);"></div>
+            <div class="line" style="background-color: color-mix(in srgb, var(--tg-theme-accent-text-color) 50%, black 50%);"></div>
+            <div class="line" style="background-color: color-mix(in srgb, var(--tg-theme-accent-text-color) 75%, black 25%);"></div>
+            <div class="line" style="background-color: var(--tg-theme-accent-text-color);"></div>
+        </div>
+        
+        <div class="nums">
+            <div class="num">0</div>
+            <div class="num">1-2</div>
+            <div class="num">3-4</div>
+            <div class="num">5</div>
         </div>
     </main>
     <script>
