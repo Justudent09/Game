@@ -136,6 +136,10 @@ main {
 .day.active1 {
     background-color: color-mix(in srgb, var(--tg-theme-accent-text-color) 50%, black 50%);
 }
+
+.day.active2 {
+    background-color: color-mix(in srgb, var(--tg-theme-accent-text-color) 30%, black 70%);
+}
     </style>
 </head>
 <body>
@@ -194,11 +198,19 @@ main {
       for (let d = 1; d <= daysInMonth; d++) {
         const day = document.createElement('div');
         day.classList.add('day');
-        if (Math.random() > 0.7) {
+        let a = 0;
+        
+        if ((a === 0)&&(Math.random() > 0.7)) {
+          a = 1;
           day.classList.add('active');
         }
-        if (Math.random() > 0.5) {
+        if ((a === 0)&&(Math.random() > 0.6)) {
+          a = 1;
           day.classList.add('active1');
+        }
+        if ((a === 0)&&(Math.random() > 0.5)) {
+          a = 1;
+          day.classList.add('active2');
         }
         day.textContent = d;
         days.appendChild(day);
