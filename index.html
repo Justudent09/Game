@@ -29,6 +29,8 @@
         main {
             overflow: hidden;
             touch-action: none;
+            display:flex;
+            justify-content: center;
         }
 
         .calendar {
@@ -79,14 +81,16 @@
     </style>
 </head>
 <body>
-    <div class="calendar">
-        <div class="calendar-header-container">
-            <button class="btn" id="prev-month">&lt;</button>
-            <div class="calendar-header" id="calendar-header"></div>
-            <button class="btn" id="next-month">&gt;</button>
+    <main>
+        <div class="calendar">
+            <div class="calendar-header-container">
+                <button class="btn" id="prev-month">&lt;</button>
+                <div class="calendar-header" id="calendar-header"></div>
+                <button class="btn" id="next-month">&gt;</button>
+            </div>
+            <div class="calendar-days" id="calendar-days"></div>
         </div>
-        <div class="calendar-days" id="calendar-days"></div>
-    </div>
+    </main>
     <script>
         let currentDate = new Date();
 
