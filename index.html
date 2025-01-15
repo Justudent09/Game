@@ -13,6 +13,7 @@
             -moz-user-select: none;
             -ms-user-select: none;
             user-select: none;
+            box-sizing: border-box;
         }
 
         body {
@@ -34,8 +35,9 @@
         }
 
         .calendar {
-            margin-top: 20vh;
-            width: 80vw;            
+            margin: 0 auto; 
+            max-width: 80vw;
+            width: 100%;            
             background-color: var(--tg-theme-secondary-bg-color);
             border-radius: 5vw;
             padding: 9vw;
@@ -63,8 +65,9 @@
             justify-content: center;    
             align-items: center;
             border-radius: 3vw;
-            width: 8vw;
-            height: 8vw;
+            aspect-ratio: 1;
+            width: 100%;
+            max-width: 8vw;
         }
         .day.active {
             background-color: var(--tg-theme-accent-text-color) ;
