@@ -34,7 +34,7 @@
         .calendar {
             margin-top: 20vh;
             width: 80vw;            
-            background-color: #1e1e1e;
+            background-color: var(--tg-theme-secondary-bg-color);
             border-radius: 5vw;
             padding: 2vw;
         }
@@ -54,7 +54,7 @@
             gap: 1vw;
         }
         .day-name {
-            color: red;
+            color: var(--tg-theme-hint-color);
         }
         .day-name, .day {
             display: flex;
@@ -65,15 +65,13 @@
             height: 10vw;
         }
         .day.active {
-            background-color: #ffd700;
-            color: #000;
+            background-color: var(--tg-theme-accent-text-color) ;
         }
         .day.empty {
             background-color: transparent;
         }
         .btn {
-            background-color: #1e1e1e;
-            color: white;
+            background-color: var(--tg-theme-secondary-bg-color);
             border: none;
             border-radius: 3vw;
             cursor: pointer;
