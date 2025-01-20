@@ -28,12 +28,13 @@
         }
 
         main {
+            margin-top: calc(var(--tg-content-safe-area-inset-top) + var(--tg-safe-area-inset-top))
             overflow: hidden;
             touch-action: none;
         }
 
         .calendar {
-            margin: calc(var(--tg-content-safe-area-inset-top) + var(--tg-safe-area-inset-top)) auto 0; 
+            margin: 0 auto; 
             max-width: 80vw;
             width: 100%;            
             background-color: var(--tg-theme-secondary-bg-color);
