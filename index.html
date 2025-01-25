@@ -43,6 +43,7 @@
         }
         .calendar-header-container {
             display: flex;
+            justify-content: space-between; 
             align-items: center;
             margin-bottom: 2vw;
             height: 30px;
@@ -50,6 +51,12 @@
         .calendar-header {
             text-align: center;
             font-size: 16px;
+        }
+        .btns {
+            display: flex;
+            align-items: center;
+            height: 30px;
+            gap: 10px;
         }
         .calendar-days {
             display: grid;
@@ -90,8 +97,10 @@
         <div class="calendar">
             <div class="calendar-header-container">
                 <div class="calendar-header" id="calendar-header"></div>
-                <button class="btn" id="prev-month" style="margin-right: 10px;">&lt;</button>
-                <button class="btn" id="next-month" style="margin-right: 0px;">&gt;</button>
+                <div class="btns">
+                    <button class="btn" id="prev-month">&lt;</button>
+                    <button class="btn" id="next-month">&gt;</button>
+                <div>
             </div>
             <div class="calendar-days" id="calendar-days"></div>
         </div>
