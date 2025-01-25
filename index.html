@@ -52,12 +52,6 @@
             text-align: center;
             font-size: 16px;
         }
-        .btns {
-            display: flex;
-            align-items: center;
-            height: 30px;
-            gap: 10px;
-        }
         .calendar-days {
             display: grid;
             grid-template-columns: repeat(7, 8vw);
@@ -97,10 +91,8 @@
         <div class="calendar">
             <div class="calendar-header-container">
                 <div class="calendar-header" id="calendar-header"></div>
-                <div class="btns">
-                    <button class="btn" id="prev-month">&lt;</button>
-                    <button class="btn" id="next-month">&gt;</button>
-                <div>
+                <button class="btn" id="prev-month">&lt;</button>
+                <button class="btn" id="next-month">&gt;</button>
             </div>
             <div class="calendar-days" id="calendar-days"></div>
         </div>
