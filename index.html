@@ -6,195 +6,267 @@
     <title>Shedule</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        * {
-            -webkit-tap-highlight-color: transparent;
-            -webkit-user-select: none;
-            -khtml-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-            box-sizing: border-box;
-        }
+* {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
 
-        body {
-            background-color: var(--tg-theme-bg-color);
-            color: var(--tg-theme-text-color);
-            color-scheme: var(--tg-color-scheme);
-            touch-action: none;
-            overflow: hidden;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        }
+body {
+    background-color: var(--tg-theme-bg-color);
+    color: var(--tg-theme-text-color);
+    color-scheme: var(--tg-color-scheme);
+    touch-action: none;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
 
-        main {
-            margin-top: calc(var(--tg-content-safe-area-inset-top) + var(--tg-safe-area-inset-top));
-            overflow: hidden;
-            touch-action: none;
-        }
+main {
+    overflow: hidden;
+    touch-action: none;
+}
 
-        .calendar {
-            margin: 10vw auto 0; 
-            max-width: 80vw;
-            width: 100%;            
-            background-color: var(--tg-theme-secondary-bg-color);
-            border-radius: 5vw;
-            padding: 9vw;
-        }
-        .calendar-header-container {
-            display: flex;
-            justify-content: space-between; 
-            align-items: center;
-            margin-bottom: 2vw;
-        }
-        .calendar-header {
-            text-align: center;
-            font-size: 16px;
-        }
-        .calendar-days {
-            display: grid;
-            grid-template-columns: repeat(7, 8vw);
-            gap: 1vw;
-        }
-        .day-name {
-            color: var(--tg-theme-hint-color);
-        }
-        .day-name, .day {
-            display: flex;
-            justify-content: center;    
-            align-items: center;
-            border-radius: 3vw;
-            aspect-ratio: 1;
-            width: 100%;
-            max-width: 8vw;
-            font-size: 14px;
-        }
-        .day.active {
-            color: var(--tg-theme-destructive-text-color);
-        }
-        .day.empty {
-            background-color: transparent;
-        }
-        .btns {
-            display: flex;
-            gap: 3vw;
-        }
-        .btn {
-            background-color: var(--tg-theme-button-color);
-            width: 7vw;
-            height: 7vw;
-            border: none;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;    
-            align-items: center;
-        }
+
+.horizontal-scroll {
+    width: 100vw;
+    height: 221px;
+    margin-top: 20vh;
+    margin-bottom: 15px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory; 
+    scroll-behavior: smooth; 
+    white-space: nowrap; 
+    scrollbar-width: none; 
+    -ms-overflow-style: none; 
+    touch-action: pan-x;
+}
+
+.horizontal-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.scroll-container {
+    display: flex;
+    flex-wrap: nowrap;
+}
+
+.scroll-item {
+    flex: 0 0 70px;
+    height: 221px; 
+    display: flex;
+    flex-direction: column;
+    font-size: 16px;
+    scroll-snap-align: start; 
+    scroll-snap-stop: always; 
+    box-sizing: border-box; 
+    transition: background-color 0.3s ease;
+    gap: 3px;
+}
+
+.scroll-item div {
+    display: flex;
+    height: 25px;
+    justify-content: center;    
+    align-items: center;
+    color: var(--tg-theme-hint-color);
+}
+
+.calendar-container {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    flex: 1;
+    height: 221px;
+}
+
+.month {
+    flex: none;
+    width: auto;
+    scroll-snap-align: start;
+    margin-right: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.month-title {
+    font-size: 16px;
+    margin-bottom: 9px;
+}
+
+.days {
+    display: flex;
+    flex-direction: column;
+    flex-wrap: wrap;
+    height: 193px;
+    gap: 3px
+}
+
+.day-none {
+    visibility: hidden;
+    width: 25px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--tg-theme-button-text-color);
+}
+
+.day {
+    width: 25px;
+    height: 25px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: color-mix(in srgb, var(--tg-theme-accent-text-color) 25%, black 75%);
+    border-radius: 5px;
+    font-size: 14px;
+    color: var(--tg-theme-button-text-color);
+}
+
+.day.active {
+    background-color: var(--tg-theme-accent-text-color);
+}
+
+.day.active1 {
+    background-color: color-mix(in srgb, var(--tg-theme-accent-text-color) 75%, black 25%);
+}
+
+.day.active2 {
+    background-color: color-mix(in srgb, var(--tg-theme-accent-text-color) 50%, black 50%);
+}
+
+.lines {
+    display: flex;
+    width: 83vw;
+    margin-left: 8.5vw;
+    margin-top: 20px;
+    flex-direction: row;
+    gap: 1vw;
+}
+
+.line {
+    width: 20vw;
+    height: 20px;
+    border-radius: 5px;
+}
+
+.nums {
+    display: flex;
+    width: 83vw;
+    margin-left: 8.5vw;
+    flex-direction: row;
+    gap: 1vw;
+}
+
+.num {
+    display: flex;
+    width: 20vw;
+    height: 20px;
+    align-items: center;
+    justify-content: center;
+    color: var(--tg-theme-hint-color);
+}
     </style>
 </head>
 <body>
     <main>
-        <div class="calendar">
-            <div class="calendar-header-container">
-                <div class="calendar-header" id="calendar-header"></div>
-                <div class="btns">
-                <button class="btn" id="prev-month">
-                    <svg width="3vw" height="3vw" viewBox="-4.5 0 20 20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-    
-                        <title>arrow_left [#335]</title>
-                        <desc>Created with Sketch.</desc>
-                        <defs></defs>
-                        <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                            <g id="Dribbble-Light-Preview" transform="translate(-345.000000, -6679.000000)" fill="var(--tg-theme-button-text-color)">
-                                <g id="icons" transform="translate(56.000000, 160.000000)">
-                                    <path d="M299.633777,6519.29231 L299.633777,6519.29231 C299.228878,6518.90256 298.573377,6518.90256 298.169513,6519.29231 L289.606572,6527.55587 C288.797809,6528.33636 288.797809,6529.60253 289.606572,6530.38301 L298.231646,6538.70754 C298.632403,6539.09329 299.27962,6539.09828 299.685554,6538.71753 L299.685554,6538.71753 C300.100809,6538.32879 300.104951,6537.68821 299.696945,6537.29347 L291.802968,6529.67648 C291.398069,6529.28574 291.398069,6528.65315 291.802968,6528.26241 L299.633777,6520.70538 C300.038676,6520.31563 300.038676,6519.68305 299.633777,6519.29231" id="arrow_left-[#335]"></path>
-                                </g>
-                            </g>
-                        </g>
-                    </svg>
-                </button>
-                <button class="btn" id="next-month">
-                    <svg width="3vw" height="3vw" viewBox="-4.5 0 20 20" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-    
-                        <title>arrow_right [#336]</title>
-                        <desc>Created with Sketch.</desc>
-                        <defs></defs>
-                        <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
-                            <g id="Dribbble-Light-Preview" transform="translate(-305.000000, -6679.000000)" fill="var(--tg-theme-button-text-color)">
-                                <g id="icons" transform="translate(56.000000, 160.000000)">
-                                    <path d="M249.365851,6538.70769 L249.365851,6538.70769 C249.770764,6539.09744 250.426289,6539.09744 250.830166,6538.70769 L259.393407,6530.44413 C260.202198,6529.66364 260.202198,6528.39747 259.393407,6527.61699 L250.768031,6519.29246 C250.367261,6518.90671 249.720021,6518.90172 249.314072,6519.28247 L249.314072,6519.28247 C248.899839,6519.67121 248.894661,6520.31179 249.302681,6520.70653 L257.196934,6528.32352 C257.601847,6528.71426 257.601847,6529.34685 257.196934,6529.73759 L249.365851,6537.29462 C248.960938,6537.68437 248.960938,6538.31795 249.365851,6538.70769" id="arrow_right-[#336]"></path>
-                                </g>
-                            </g>
-                        </g>
-                    </svg>
-                </button>
+        <div class="horizontal-scroll" id="horizontal-scroll">
+            <div class="scroll-container">
+                <div class="scroll-item">
+                    <div></div>
+                    <div>Пнд</div>
+                    <div>Втр</div>
+                    <div>Срд</div>
+                    <div>Чтв</div>
+                    <div>Птн</div>
+                    <div>Сбт</div>
+                    <div>Вск</div>
+                </div>
+                <div class="calendar-container" id="calendar"></div>
             </div>
-            </div>
-            <div class="calendar-days" id="calendar-days"></div>
+        </div>
+
+        <hr style="border: 0; margin-top: 40px; height: 1px; background-color: var(--tg-theme-section-separator-color);">
+
+        <div class="lines">
+            <div class="line" style="background-color: color-mix(in srgb, var(--tg-theme-accent-text-color) 25%, black 75%);"></div>
+            <div class="line" style="background-color: color-mix(in srgb, var(--tg-theme-accent-text-color) 50%, black 50%);"></div>
+            <div class="line" style="background-color: color-mix(in srgb, var(--tg-theme-accent-text-color) 75%, black 25%);"></div>
+            <div class="line" style="background-color: var(--tg-theme-accent-text-color);"></div>
+        </div>
+
+        <div class="nums">
+            <div class="num">0</div>
+            <div class="num">1-2</div>
+            <div class="num">3-4</div>
+            <div class="num">5</div>
         </div>
     </main>
     <script>
-        let currentDate = new Date();
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth();
 
-        function capitalizeFirstLetter(string) {
-            return string.charAt(0).toUpperCase() + string.slice(1);
-        }
+    const monthNames = [
+      "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
+      "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"
+    ];
 
-function generateCalendar(date) {
-    const year = date.getFullYear();
-    const month = date.getMonth();
+    const calendarContainer = document.getElementById('calendar');
 
-    const firstDayOfWeek = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    for (let m = currentMonth; m < 12; m++) {
+      const month = document.createElement('div');
+      month.classList.add('month');
 
-    const header = document.getElementById('calendar-header');
-    const monthName = date.toLocaleString('default', { month: 'long' });
-    header.textContent = capitalizeFirstLetter(monthName) + ' ' + year;
+      const monthTitle = document.createElement('div');
+      monthTitle.classList.add('month-title');
+      monthTitle.textContent = monthNames[m];
+      month.appendChild(monthTitle);
 
-    const calendarDays = document.getElementById('calendar-days');
-    calendarDays.innerHTML = '';
+      const days = document.createElement('div');
+      days.classList.add('days');
+      const daysInMonth = new Date(currentYear, m + 1, 0).getDate();
+      const firstDayOfWeek = new Date(currentYear, m, 1).getDay();
+      const offset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
 
-    // Days of the week
-    const dayNames = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
-    for (let dayName of dayNames) {
-        const dayNameElement = document.createElement('div');
-        dayNameElement.className = 'day-name';
-        dayNameElement.textContent = dayName;
-        calendarDays.appendChild(dayNameElement);
-    }
-
-    // Fill empty days before the first day of the month
-    const emptyDays = (firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1);
-    for (let i = 0; i < emptyDays; i++) {
+      // Генерация пустых блоков перед первым днем месяца
+      for (let i = 0; i < offset; i++) {
         const emptyDay = document.createElement('div');
-        emptyDay.className = 'day empty';
-        calendarDays.appendChild(emptyDay);
-    }
+        emptyDay.classList.add('day-none');
+        days.appendChild(emptyDay);
+      }
 
-    // Fill days of the month
-    const today = new Date();
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dayElement = document.createElement('div');
-        dayElement.className = 'day';
-        if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
-            dayElement.classList.add('active');
+      // Генерация дней месяца
+      for (let d = 1; d <= daysInMonth; d++) {
+        const day = document.createElement('div');
+        day.classList.add('day');
+        let a = 0;
+
+        if ((a === 0)&&(Math.random() > 0.7)) {
+          a = 1;
+          day.classList.add('active');
         }
-        dayElement.textContent = day;
-        calendarDays.appendChild(dayElement);
+        if ((a === 0)&&(Math.random() > 0.6)) {
+          a = 1;
+          day.classList.add('active1');
+        }
+        if ((a === 0)&&(Math.random() > 0.5)) {
+          a = 1;
+          day.classList.add('active2');
+        }
+        day.textContent = d;
+        days.appendChild(day);
+      }
+
+      month.appendChild(days);
+      calendarContainer.appendChild(month);
     }
-}
-
-        document.getElementById('prev-month').addEventListener('click', () => {
-            currentDate.setMonth(currentDate.getMonth() - 1);
-            generateCalendar(currentDate);
-        });
-
-        document.getElementById('next-month').addEventListener('click', () => {
-            currentDate.setMonth(currentDate.getMonth() + 1);
-            generateCalendar(currentDate);
-        });
-
-        generateCalendar(currentDate);
     </script>
 </body>
 </html>
