@@ -3,270 +3,183 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, user-scalable=no">
-    <title>Shedule</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <title>Tic-Tac-Toe</title>
+    <script src="https://telegram.org/js/telegram-web-app.js?56"></script>
     <style>
-* {
-    -webkit-tap-highlight-color: transparent;
-    -webkit-user-select: none;
-    -khtml-user-select: none;
-    -moz-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-}
+        body {
+            -webkit-tap-highlight-color: transparent;
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: var(--tg-theme-bg-color);
+            color: var(--tg-theme-text-color);
+        }
 
-body {
-    background-color: var(--tg-theme-bg-color);
-    color: var(--tg-theme-text-color);
-    color-scheme: var(--tg-color-scheme);
-    touch-action: none;
-    overflow: hidden;
-    margin: 0;
-    padding: 0;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-}
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 100px);
+            grid-template-rows: repeat(3, 100px);
+            position: relative;
+            margin: auto;
+            gap: 10px;
+        }
 
-main {
-    overflow: hidden;
-    touch-action: none;
-}
+        .board::before,
+        .board::after {
+            content: '';
+            position: absolute;
+            background-color: var(--tg-theme-section-separator-color);
+            border-radius: 10px;            
+        }
 
+        .board::before {
+            width: 320px;
+            height: 10px;
+            top: 100px;
+            left: 0;
+            box-shadow: 0 110px 0 0 var(--tg-theme-section-separator-color);            
+        }
 
-.horizontal-scroll {
-    width: 100vw;
-    height: 221px;
-    margin-top: 20vh;
-    margin-bottom: 15px;
-    overflow-x: auto;
-    overflow-y: hidden;
-    scroll-snap-type: x mandatory; 
-    scroll-behavior: smooth; 
-    white-space: nowrap; 
-    scrollbar-width: none; 
-    -ms-overflow-style: none; 
-    touch-action: pan-x;
-}
+        .board::after {
+            width: 10px;
+            height: 320px;
+            left: 100px;
+            top: 0;
+            box-shadow: 110px 0 0 0 var(--tg-theme-section-separator-color);
+        }
 
-.horizontal-scroll::-webkit-scrollbar {
-    display: none;
-}
+        .cell {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 100px;
+            height: 100px;
+            font-size: 2.5em;
+            font-family: "Segoe UI Emoji", "Noto Color Emoji", "Apple Color Emoji", sans-serif;
+            cursor: pointer;
+        }
 
-.scroll-container {
-    display: flex;
-    flex-wrap: nowrap;
-}
-
-.scroll-item {
-    flex: 0 0 70px;
-    height: 221px; 
-    display: flex;
-    flex-direction: column;
-    font-size: 16px;
-    scroll-snap-align: start; 
-    scroll-snap-stop: always; 
-    box-sizing: border-box; 
-    transition: background-color 0.3s ease;
-    gap: 3px;
-}
-
-.scroll-item div {
-    display: flex;
-    height: 25px;
-    justify-content: center;    
-    align-items: center;
-    color: var(--tg-theme-hint-color);
-}
-
-.calendar-container {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    flex: 1;
-    height: 221px;
-}
-
-.month {
-    flex: none;
-    width: auto;
-    scroll-snap-align: start;
-    margin-right: 20px;
-    display: flex;
-    flex-direction: column;
-}
-
-.month-title {
-    font-size: 16px;
-    margin-bottom: 9px;
-}
-
-.days {
-    display: flex;
-    flex-direction: column;
-    flex-wrap: wrap;
-    height: 193px;
-    gap: 3px
-}
-
-.day-none {
-    visibility: hidden;
-    width: 25px;
-    height: 25px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--tg-theme-button-text-color);
-}
-
-.day {
-    width: 25px;
-    height: 25px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background-color: color-mix(in srgb, var(--tg-theme-accent-text-color) 25%, black 75%);
-    border-radius: 5px;
-    font-size: 14px;
-    color: var(--tg-theme-button-text-color);
-}
-
-.day.active {
-    background-color: var(--tg-theme-accent-text-color);
-}
-
-.day.active1 {
-    background-color: color-mix(in srgb, var(--tg-theme-accent-text-color) 75%, black 25%);
-}
-
-.day.active2 {
-    background-color: color-mix(in srgb, var(--tg-theme-accent-text-color) 50%, black 50%);
-}
-
-.lines {
-    display: flex;
-    width: 83vw;
-    margin-left: 8.5vw;
-    margin-top: 20px;
-    flex-direction: row;
-    gap: 1vw;
-}
-
-.line {
-    width: 20vw;
-    height: 20px;
-    border-radius: 5px;
-}
-
-.nums {
-    display: flex;
-    width: 83vw;
-    margin-left: 8.5vw;
-    flex-direction: row;
-    gap: 1vw;
-}
-
-.num {
-    display: flex;
-    width: 20vw;
-    height: 20px;
-    align-items: center;
-    justify-content: center;
-    color: var(--tg-theme-hint-color);
-}
+        .cell.taken {
+            cursor: not-allowed;
+        }
     </style>
 </head>
 <body>
-    <main>
-        <div class="horizontal-scroll" id="horizontal-scroll">
-            <div class="scroll-container">
-                <div class="scroll-item">
-                    <div></div>
-                    <div>Пнд</div>
-                    <div>Втр</div>
-                    <div>Срд</div>
-                    <div>Чтв</div>
-                    <div>Птн</div>
-                    <div>Сбт</div>
-                    <div>Вск</div>
-                </div>
-                <div class="calendar-container" id="calendar"></div>
-            </div>
-        </div>
+    <div class="board" id="board"></div>
 
-        <hr style="border: 0; margin-top: 40px; height: 1px; background-color: var(--tg-theme-section-separator-color);">
-
-        <div class="lines">
-            <div class="line" style="background-color: color-mix(in srgb, var(--tg-theme-accent-text-color) 25%, black 75%);"></div>
-            <div class="line" style="background-color: color-mix(in srgb, var(--tg-theme-accent-text-color) 50%, black 50%);"></div>
-            <div class="line" style="background-color: color-mix(in srgb, var(--tg-theme-accent-text-color) 75%, black 25%);"></div>
-            <div class="line" style="background-color: var(--tg-theme-accent-text-color);"></div>
-        </div>
-
-        <div class="nums">
-            <div class="num">0</div>
-            <div class="num">1-2</div>
-            <div class="num">3-4</div>
-            <div class="num">5</div>
-        </div>
-    </main>
     <script>
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth();
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
+                tg.expand();
+                console.log('Telegram WebApp успешно инициализирован');
+            } else {
+                console.warn('Telegram WebApp API недоступен');
+            }
+        });
 
-    const monthNames = [
-      "Янв", "Фев", "Мар", "Апр", "Май", "Июн",
-      "Июл", "Авг", "Сен", "Окт", "Ноя", "Дек"
-    ];
+        const board = document.getElementById('board');
+        let currentPlayer = '❌';
+        let boardState = Array(9).fill(null);
+        let gameActive = true;
 
-    const calendarContainer = document.getElementById('calendar');
-
-    for (let m = currentMonth; m < 12; m++) {
-      const month = document.createElement('div');
-      month.classList.add('month');
-
-      const monthTitle = document.createElement('div');
-      monthTitle.classList.add('month-title');
-      monthTitle.textContent = monthNames[m];
-      month.appendChild(monthTitle);
-
-      const days = document.createElement('div');
-      days.classList.add('days');
-      const daysInMonth = new Date(currentYear, m + 1, 0).getDate();
-      const firstDayOfWeek = new Date(currentYear, m, 1).getDay();
-      const offset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
-
-      // Генерация пустых блоков перед первым днем месяца
-      for (let i = 0; i < offset; i++) {
-        const emptyDay = document.createElement('div');
-        emptyDay.classList.add('day-none');
-        days.appendChild(emptyDay);
-      }
-
-      // Генерация дней месяца
-      for (let d = 1; d <= daysInMonth; d++) {
-        const day = document.createElement('div');
-        day.classList.add('day');
-        let a = 0;
-
-        if ((a === 0)&&(Math.random() > 0.7)) {
-          a = 1;
-          day.classList.add('active');
+        function createBoard() {
+            board.innerHTML = '';
+            boardState.forEach((cell, index) => {
+                const cellDiv = document.createElement('div');
+                cellDiv.classList.add('cell');
+                cellDiv.dataset.index = index;
+                cellDiv.addEventListener('click', onCellClick);
+                board.appendChild(cellDiv);
+            });
         }
-        if ((a === 0)&&(Math.random() > 0.6)) {
-          a = 1;
-          day.classList.add('active1');
-        }
-        if ((a === 0)&&(Math.random() > 0.5)) {
-          a = 1;
-          day.classList.add('active2');
-        }
-        day.textContent = d;
-        days.appendChild(day);
-      }
 
-      month.appendChild(days);
-      calendarContainer.appendChild(month);
+        function onCellClick(event) {
+    const index = event.target.dataset.index;
+
+    if (boardState[index] || !gameActive) return;
+
+    boardState[index] = currentPlayer;
+    event.target.textContent = currentPlayer;
+    event.target.classList.add('taken');
+
+    // Виброотклик при каждом ходе
+    if (window.Telegram && Telegram.WebApp.HapticFeedback) {
+        Telegram.WebApp.HapticFeedback.impactOccurred('heavy');
+Telegram.WebApp.HapticFeedback.notificationOccurred('success');
     }
+
+    if (checkWinner()) {
+        gameActive = false;
+        showEndGameModal(`${currentPlayer} победил! 🎉`);
+        return;
+    }
+
+    if (!boardState.includes(null)) {
+        gameActive = false;
+        showEndGameModal('Ничья! 🤝');
+        return;
+    }
+
+    currentPlayer = currentPlayer === '❌' ? '⭕' : '❌';
+}
+
+        function checkWinner() {
+            const winPatterns = [
+                [0, 1, 2],
+                [3, 4, 5],
+                [6, 7, 8],
+                [0, 3, 6],
+                [1, 4, 7],
+                [2, 5, 8],
+                [0, 4, 8],
+                [2, 4, 6]
+            ];
+
+            return winPatterns.some(pattern => {
+                const [a, b, c] = pattern;
+                return boardState[a] && boardState[a] === boardState[b] && boardState[a] === boardState[c];
+            });
+        }
+
+        function showEndGameModal(message) {
+            if (window.Telegram && window.Telegram.WebApp) {
+                const tg = window.Telegram.WebApp;
+
+                gameActive = false;
+
+                tg.showPopup({
+                    title: 'Игра окончена',
+                    message: message,
+                    buttons: [
+                        { id: 'restart', type: 'default', text: 'Начать заново' }
+                    ]
+                }, (buttonId) => {
+                    if (buttonId === 'restart') {
+                        resetGame();
+                    }
+                });
+                tg.onEvent('popupClosed', () => {
+                    resetGame();
+                });
+            } else {
+                resetGame();
+            }
+        }
+
+        function resetGame() {
+            boardState = Array(9).fill(null);
+            currentPlayer = '❌';
+            gameActive = true;
+            createBoard();
+        }
+
+        createBoard();
     </script>
 </body>
 </html>
