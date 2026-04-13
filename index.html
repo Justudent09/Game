@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Bracket Final</title>
+<title>Universal Bracket</title>
 
 <style>
 body {
@@ -16,12 +16,12 @@ body {
 .bg {
     position: fixed;
     inset: 0;
-    background: url('image/d4620c5b07a97bd1b3016e8a20ff634e.jpg')
+    background: url('https://raw.githubusercontent.com/Justudent09/Game/refs/heads/main/image/d4620c5b07a97bd1b3016e8a20ff634e.jpg')
     center/cover no-repeat;
     z-index: -1;
 }
 
-/* скролл */
+/* scroll */
 .scroll-area {
     position: absolute;
     inset: 0;
@@ -32,6 +32,7 @@ body {
 .wrapper {
     margin-top: calc(var(--tg-content-safe-area-inset-top) + var(--tg-safe-area-inset-top));;
     position: relative;
+    padding: 5vw;
 }
 
 /* матч */
@@ -42,14 +43,14 @@ body {
     background: rgba(255,255,255,0.08);
     border: 1px solid rgba(255,255,255,0.2);
     border-radius: 14px;
-    backdrop-filter: blur(40px);
+    backdrop-filter: blur(20px);
     overflow: hidden;
 }
 
 .title {
     text-align: center;
     font-size: 12px;
-    opacity: 0.6;
+    opacity: 0.5;
     padding: 4px;
     border-bottom: 1px solid rgba(255,255,255,0.1);
 }
@@ -78,51 +79,29 @@ body {
 <script>
 
 /* =========================
-   ДАННЫЕ
-========================= */
-
-const teams = [
- {name:"Eternal Fire", power:87},
- {name:"Spirit", power:72},
-
- {name:"Shadow Core", power:55},
- {name:"Void Energy", power:91},
-
- {name:"Arcane Power", power:66},
- {name:"Life Force", power:60},
-
- {name:"Frost Resist", power:78},
- {name:"Light Blessing", power:50},
-
- {name:"Dragon Soul", power:95},
- {name:"Iron Will", power:80},
-
- {name:"Mana Regen", power:62},
- {name:"Critical Hit", power:74},
-
- {name:"Health Boost", power:88},
- {name:"Energy Flow", power:70},
-
- {name:"Ancient Power", power:90},
- {name:"Storm Force", power:85}
-];
-
-/* =========================
    НАСТРОЙКИ
 ========================= */
 
 const stepX = 260;
-const stepY = 50;
+const stepY = 90;
 const cardH = 70;
 
 const wrapper = document.getElementById("wrapper");
 const offset = window.innerWidth * 0.05;
 
 /* =========================
+   ИГРОКИ (ЛЮБОЕ КОЛИЧЕСТВО)
+========================= */
+
+let players = Array.from({length: 13}, (_, i) => ({
+    name: "TEAM " + (i + 1)
+}));
+
+/* =========================
    СОЗДАНИЕ МАТЧА
 ========================= */
 
-function createMatch(x, y, a, b=null, label="") {
+function createMatch(x, y, a, b=null) {
 
     const el = document.createElement("div");
     el.className = "glass-card";
@@ -131,80 +110,86 @@ function createMatch(x, y, a, b=null, label="") {
     el.style.top = y + "px";
 
     el.innerHTML = `
-        <div class="title">${label}</div>
-        <div class="row"><span>${a.name}</span><span>${a.power}</span></div>
-        <div class="row"><span>${b ? b.name : "WINNER"}</span><span>${b ? b.power : "—"}</span></div>
+        <div class="title"></div>
+        <div class="row"><span>${a.name}</span><span></span></div>
+        <div class="row"><span>${b ? b.name : "BYE"}</span><span></span></div>
     `;
 
     wrapper.appendChild(el);
 }
 
 /* =========================
-   1/8
+   ТУРНИР
 ========================= */
 
-let positions = [];
+function run(list) {
 
-for (let i = 0; i < teams.length; i += 2) {
+    let round = 0;
+    let positions = [];
 
-    const a = teams[i];
-    const b = teams[i+1];
+    while (list.length > 1) {
 
-    const y = i * stepY;
+        const next = [];
 
-    createMatch(offset, y, a, b, "1/8");
+        for (let i = 0; i < list.length; i += 2) {
 
-    const winner = (a.power >= b.power) ? a : b;
+            const a = list[i];
+            const b = list[i + 1];
 
-    positions.push({
-        y: y + cardH/2,
-        data: winner
-    });
-}
+            const y = i * stepY;
 
-/* =========================
-   СЛЕДУЮЩИЕ РАУНДЫ
-========================= */
+            createMatch(
+                offset + round * stepX,
+                y,
+                a,
+                b
+            );
 
-let round = 1;
+            // BYE или случайный победитель
+            const winner = (!b)
+                ? a
+                : (Math.random() > 0.5 ? a : b);
 
-while (positions.length > 1) {
+            positions.push({
+                y: y + cardH / 2,
+                data: winner
+            });
+        }
 
-    const next = [];
+        /* центровка следующего раунда */
+        const grouped = [];
 
-    let label = "";
+        for (let i = 0; i < positions.length; i += 2) {
 
-    if (round === 1) label = "1/4";
-    if (round === 2) label = "ПОЛУФИНАЛ";
-    if (round === 3) label = "ФИНАЛ";
+            const A = positions[i];
+            const B = positions[i + 1];
 
-    for (let i = 0; i < positions.length; i += 2) {
+            const yCenter = B ? (A.y + B.y) / 2 : A.y;
 
-        const A = positions[i];
-        const B = positions[i+1];
+            grouped.push({
+                y: yCenter,
+                data: A.data
+            });
+        }
 
-        const yCenter = (A.y + B.y) / 2;
-        const y = yCenter - cardH/2;
+        list = positions.map(p => p.data);
+        positions = grouped;
 
-        const winner = (A.data.power >= B.data.power) ? A.data : B.data;
-
-        createMatch(
-            offset + round * stepX,
-            y,
-            A.data,
-            B.data,
-            label
-        );
-
-        next.push({
-            y: yCenter,
-            data: winner
-        });
+        round++;
     }
 
-    positions = next;
-    round++;
+    /* финал */
+    if (list.length === 1) {
+        createMatch(
+            offset + round * stepX,
+            positions[0]?.y || 0,
+            list[0],
+            null
+        );
+    }
 }
+
+run(players);
 
 </script>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
