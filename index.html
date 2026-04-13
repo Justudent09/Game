@@ -32,7 +32,6 @@ body {
     padding: 5vw;
 }
 
-/* ===== ТВОЙ ДИЗАЙН ===== */
 .glass-card {
     position: absolute;
     width: 200px;
@@ -47,7 +46,7 @@ body {
 
 .row {
     padding: 10px 12px;
-    text-align: center;   /* 🔥 ЦЕНТРИРУЕМ */
+    text-align: center; 
 }
 
 .row + .row {
@@ -92,7 +91,6 @@ document.addEventListener("DOMContentLoaded", () => {
         el.style.left = x + "px";
         el.style.top = y + "px";
 
-        // ===== ЧЕМПИОН (ЦЕНТРИРОВАННЫЙ) =====
         if (isChampion) {
             el.innerHTML = `
                 <div class="row">
@@ -103,7 +101,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 </div>
             `;
         }
-        // ===== ОБЫЧНЫЙ МАТЧ =====
         else if (!b) {
             el.innerHTML = `
                 <div class="row">${a.name}</div>
@@ -126,7 +123,6 @@ document.addEventListener("DOMContentLoaded", () => {
         let round = 0;
         let currentMatches = [];
 
-        // 1 раунд
         for (let i = 0; i < list.length; i += 2) {
 
             const a = list[i];
@@ -148,7 +144,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
         round++;
 
-        // раунды
         while (currentMatches.length > 1) {
 
             const next = [];
@@ -177,7 +172,6 @@ document.addEventListener("DOMContentLoaded", () => {
             round++;
         }
 
-        // ===== ЧЕМПИОН =====
         if (currentMatches.length === 1) {
 
             const champ = currentMatches[0];
