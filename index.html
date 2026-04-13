@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Universal Bracket</title>
+<title>Bracket Fix Single Block</title>
 
 <style>
 body {
@@ -12,7 +12,6 @@ body {
     color: white;
 }
 
-/* фон */
 .bg {
     position: fixed;
     inset: 0;
@@ -21,49 +20,47 @@ body {
     z-index: -1;
 }
 
-/* scroll */
 .scroll-area {
     position: absolute;
     inset: 0;
     overflow: auto;
 }
 
-/* canvas */
 .wrapper {
-    margin-top: calc(var(--tg-content-safe-area-inset-top) + var(--tg-safe-area-inset-top));;
+    margin-top: calc(var(--tg-content-safe-area-inset-top) + var(--tg-safe-area-inset-top));
     position: relative;
     padding: 5vw;
 }
 
-/* матч */
+/* ===== ТВОЙ ДИЗАЙН ===== */
 .glass-card {
     position: absolute;
     width: 200px;
 
-    background: rgba(255,255,255,0.08);
-    border: 1px solid rgba(255,255,255,0.2);
-    border-radius: 14px;
-    backdrop-filter: blur(50px);
+    backdrop-filter: blur(40px);
+    -webkit-backdrop-filter: blur(40px);
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
     overflow: hidden;
 }
 
-.title {
-    text-align: center;
-    font-size: 12px;
-    opacity: 0.5;
-    padding: 4px;
-    border-bottom: 1px solid rgba(255,255,255,0.1);
-}
-
 .row {
-    display: flex;
-    justify-content: space-between;
-    padding: 8px 10px;
-    font-size: 12px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    padding: 10px 12px;
 }
 
 .row + .row {
     border-top: 1px solid rgba(255,255,255,0.15);
+}
+
+.value {
+    opacity: 0.9;
+    font-weight: bold;
+    border-left: 1px solid rgba(255,255,255,0.25);
+    padding-left: 12px;
 }
 </style>
 </head>
@@ -78,59 +75,59 @@ body {
 
 <script>
 
-/* =========================
-   НАСТРОЙКИ
-========================= */
+document.addEventListener("DOMContentLoaded", () => {
 
-const stepX = 260;
-const stepY = 90;
-const cardH = 70;
+    const stepX = 260;
+    const stepY = 50;
+    const cardH = 70;
 
-const wrapper = document.getElementById("wrapper");
-const offset = window.innerWidth * 0.05;
+    const wrapper = document.getElementById("wrapper");
+    const offset = window.innerWidth * 0.05;
 
-/* =========================
-   ИГРОКИ (ЛЮБОЕ КОЛИЧЕСТВО)
-========================= */
+    let players = Array.from({length: 13}, (_, i) => ({
+        name: "TEAM " + (i + 1)
+    }));
 
-let players = Array.from({length: 13}, (_, i) => ({
-    name: "TEAM " + (i + 1)
-}));
+    function createMatch(x, y, a, b=null) {
 
-/* =========================
-   СОЗДАНИЕ МАТЧА
-========================= */
+        const el = document.createElement("div");
+        el.className = "glass-card";
 
-function createMatch(x, y, a, b=null) {
+        el.style.left = x + "px";
+        el.style.top = y + "px";
 
-    const el = document.createElement("div");
-    el.className = "glass-card";
+        // 🔥 ВАЖНО: если b нет — рисуем ОДНУ строку
+        if (!b) {
+            el.innerHTML = `
+                <div class="row">
+                    <span>${a.name}</span>
+                    <span class="value"></span>
+                </div>
+            `;
+        } else {
+            el.innerHTML = `
+                <div class="row">
+                    <span>${a.name}</span>
+                    <span class="value"></span>
+                </div>
+                <div class="row">
+                    <span>${b.name}</span>
+                    <span class="value"></span>
+                </div>
+            `;
+        }
 
-    el.style.left = x + "px";
-    el.style.top = y + "px";
+        wrapper.appendChild(el);
 
-    el.innerHTML = `
-        <div class="title"></div>
-        <div class="row"><span>${a.name}</span><span></span></div>
-        <div class="row"><span>${b ? b.name : "BYE"}</span><span></span></div>
-    `;
+        return { yCenter: y + cardH / 2 };
+    }
 
-    wrapper.appendChild(el);
-}
+    function run(list) {
 
-/* =========================
-   ТУРНИР
-========================= */
+        let round = 0;
+        let currentMatches = [];
 
-function run(list) {
-
-    let round = 0;
-    let positions = [];
-
-    while (list.length > 1) {
-
-        const next = [];
-
+        // 1 раунд
         for (let i = 0; i < list.length; i += 2) {
 
             const a = list[i];
@@ -138,58 +135,54 @@ function run(list) {
 
             const y = i * stepY;
 
-            createMatch(
-                offset + round * stepX,
-                y,
-                a,
-                b
-            );
+            const match = createMatch(offset + round * stepX, y, a, b);
 
-            // BYE или случайный победитель
             const winner = (!b)
                 ? a
                 : (Math.random() > 0.5 ? a : b);
 
-            positions.push({
-                y: y + cardH / 2,
+            currentMatches.push({
+                y: match.yCenter,
                 data: winner
             });
         }
 
-        /* центровка следующего раунда */
-        const grouped = [];
+        round++;
 
-        for (let i = 0; i < positions.length; i += 2) {
+        // следующие раунды
+        while (currentMatches.length > 1) {
 
-            const A = positions[i];
-            const B = positions[i + 1];
+            const next = [];
 
-            const yCenter = B ? (A.y + B.y) / 2 : A.y;
+            for (let i = 0; i < currentMatches.length; i += 2) {
 
-            grouped.push({
-                y: yCenter,
-                data: A.data
-            });
+                const A = currentMatches[i];
+                const B = currentMatches[i + 1];
+
+                const yCenter = B ? (A.y + B.y) / 2 : A.y;
+                const y = yCenter - cardH / 2;
+
+                createMatch(offset + round * stepX, y, A.data, B?.data);
+
+                const winner =
+                    (!B) ? A.data :
+                    (Math.random() > 0.5 ? A.data : B.data);
+
+                next.push({
+                    y: yCenter,
+                    data: winner
+                });
+            }
+
+            currentMatches = next;
+            round++;
         }
 
-        list = positions.map(p => p.data);
-        positions = grouped;
-
-        round++;
     }
 
-    /* финал */
-    if (list.length === 1) {
-        createMatch(
-            offset + round * stepX,
-            positions[0]?.y || 0,
-            list[0],
-            null
-        );
-    }
-}
+    run(players);
 
-run(players);
+});
 
 </script>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
