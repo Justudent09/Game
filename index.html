@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Bracket Fix Single Block</title>
+<title>Bracket Centered Champion</title>
 
 <style>
 body {
@@ -37,8 +37,8 @@ body {
     position: absolute;
     width: 200px;
 
-    backdrop-filter: blur(40px);
-    -webkit-backdrop-filter: blur(40px);
+    backdrop-filter: blur(25px);
+    -webkit-backdrop-filter: blur(25px);
     background: rgba(255, 255, 255, 0.08);
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.2);
@@ -46,10 +46,8 @@ body {
 }
 
 .row {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: center;
     padding: 10px 12px;
+    text-align: center;   /* 🔥 ЦЕНТРИРУЕМ */
 }
 
 .row + .row {
@@ -59,8 +57,6 @@ body {
 .value {
     opacity: 0.9;
     font-weight: bold;
-    border-left: 1px solid rgba(255,255,255,0.25);
-    padding-left: 12px;
 }
 </style>
 </head>
@@ -85,10 +81,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const offset = window.innerWidth * 0.05;
 
     let players = Array.from({length: 13}, (_, i) => ({
-        name: "TEAM " + (i + 1)
+        name: "Player " + (i + 1)
     }));
 
-    function createMatch(x, y, a, b=null) {
+    function createMatch(x, y, a, b=null, isChampion=false) {
 
         const el = document.createElement("div");
         el.className = "glass-card";
@@ -96,24 +92,27 @@ document.addEventListener("DOMContentLoaded", () => {
         el.style.left = x + "px";
         el.style.top = y + "px";
 
-        // 🔥 ВАЖНО: если b нет — рисуем ОДНУ строку
-        if (!b) {
+        // ===== ЧЕМПИОН (ЦЕНТРИРОВАННЫЙ) =====
+        if (isChampion) {
             el.innerHTML = `
                 <div class="row">
-                    <span>${a.name}</span>
-                    <span class="value"></span>
+                    ЧЕМПИОН
+                </div>
+                <div class="row">
+                    <b>${a.name}</b>
                 </div>
             `;
-        } else {
+        }
+        // ===== ОБЫЧНЫЙ МАТЧ =====
+        else if (!b) {
             el.innerHTML = `
-                <div class="row">
-                    <span>${a.name}</span>
-                    <span class="value"></span>
-                </div>
-                <div class="row">
-                    <span>${b.name}</span>
-                    <span class="value"></span>
-                </div>
+                <div class="row">${a.name}</div>
+            `;
+        }
+        else {
+            el.innerHTML = `
+                <div class="row">${a.name}</div>
+                <div class="row">${b.name}</div>
             `;
         }
 
@@ -135,21 +134,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const y = i * stepY;
 
-            const match = createMatch(offset + round * stepX, y, a, b);
+            createMatch(offset + round * stepX, y, a, b);
 
             const winner = (!b)
                 ? a
                 : (Math.random() > 0.5 ? a : b);
 
             currentMatches.push({
-                y: match.yCenter,
+                y: y + cardH / 2,
                 data: winner
             });
         }
 
         round++;
 
-        // следующие раунды
+        // раунды
         while (currentMatches.length > 1) {
 
             const next = [];
@@ -178,6 +177,19 @@ document.addEventListener("DOMContentLoaded", () => {
             round++;
         }
 
+        // ===== ЧЕМПИОН =====
+        if (currentMatches.length === 1) {
+
+            const champ = currentMatches[0];
+
+            createMatch(
+                offset + round * stepX,
+                champ.y - cardH / 2,
+                champ.data,
+                null,
+                true
+            );
+        }
     }
 
     run(players);
