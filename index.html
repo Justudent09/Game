@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Bracket Perfect Centered</title>
+<title>Bracket Fixed Padding</title>
 
 <style>
 body {
@@ -24,12 +24,14 @@ body {
     position: absolute;
     inset: 0;
     overflow: auto;
+    padding: 10vw;
+    box-sizing: border-box;
 }
 
 .wrapper {
     margin-top: calc(var(--tg-content-safe-area-inset-top) + var(--tg-safe-area-inset-top));
     position: relative;
-    padding: 5vw;
+    display: inline-block;
 }
 
 .glass-card {
@@ -81,7 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const lineHalf = 1;
 
     const wrapper = document.getElementById("wrapper");
-    const offset = window.innerWidth * 0.05;
+    const offset = 0;
 
     let players = Array.from({length: 17}, (_, i) => ({
         name: "TEAM " + (i + 1)
@@ -92,7 +94,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function createMatch(x, y, a, b=null, isChampion=false) {
-
         const el = document.createElement("div");
         el.className = "glass-card";
 
@@ -114,7 +115,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         wrapper.appendChild(el);
-
         return el;
     }
 
@@ -136,12 +136,47 @@ document.addEventListener("DOMContentLoaded", () => {
         wrapper.appendChild(l);
     }
 
+    function updateWrapperSize() {
+
+        let minX = Infinity;
+        let minY = Infinity;
+        let maxX = 0;
+        let maxY = 0;
+
+        const elements = document.querySelectorAll(".glass-card, .line");
+
+        elements.forEach(el => {
+
+            const x = el.offsetLeft;
+            const y = el.offsetTop;
+            const w = el.offsetWidth;
+            const h = el.offsetHeight;
+
+            minX = Math.min(minX, x);
+            minY = Math.min(minY, y);
+            maxX = Math.max(maxX, x + w);
+            maxY = Math.max(maxY, y + h);
+        });
+
+        const padding = 50;
+
+        const shiftX = padding - minX;
+        const shiftY = padding - minY;
+
+        elements.forEach(el => {
+            el.style.left = (el.offsetLeft + shiftX) + "px";
+            el.style.top = (el.offsetTop + shiftY) + "px";
+        });
+
+        wrapper.style.width = (maxX - minX + padding * 2) + "px";
+        wrapper.style.height = (maxY - minY + padding * 2) + "px";
+    }
+
     function run(list) {
 
         let round = 0;
         let current = [];
 
-        // 1 раунд
         for (let i = 0; i < list.length; i += 2) {
 
             const a = list[i];
@@ -236,15 +271,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
             el.style.top = (center - el.offsetHeight / 2) + "px";
 
-            drawH(
-                A.x + cardW,
-                center,
-                60
-            );
+            drawH(A.x + cardW, center, 60);
         }
     }
 
     run(players);
+
+    requestAnimationFrame(updateWrapperSize);
 
 });
 
