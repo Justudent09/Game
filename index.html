@@ -2,6 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Bracket Random Players</title>
 
 <style>
@@ -15,8 +16,7 @@ body {
 .bg {
     position: fixed;
     inset: 0;
-    background: url('image/d4620c5b07a97bd1b3016e8a20ff634e.jpg')
-    center/cover no-repeat;
+    background: url('image/d4620c5b07a97bd1b3016e8a20ff634e.jpg') center/cover no-repeat;
     z-index: -1;
 }
 
@@ -36,31 +36,124 @@ body {
 .glass-card {
     position: absolute;
     width: 200px;
-
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
-    background: rgba(0,0,0,0.3);
-    border: 1px solid rgba(0,0,0,0.2);
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.2);
     border-radius: 16px;
     overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.glass-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    background: rgba(0,0,0,0.6);
 }
 
 .row {
-    padding: 10px 12px;
+    padding: 12px 12px;
     text-align: center;
 }
 
 .row + .row {
-    border-top: 1px solid rgba(0,0,0,0.2);
+    border-top: 1px solid rgba(255,255,255,0.1);
 }
 
 .line {
     position: absolute;
-    background: rgba(0,0,0,0.2);
+    background: rgba(255,255,255,0.3);
 }
 
 .h-line { height: 2px; }
 .v-line { width: 2px; }
+
+/* Модальное окно */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.8);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+}
+
+.modal {
+    background: linear-gradient(135deg, rgba(30,30,40,0.95), rgba(20,20,30,0.95));
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.3);
+    border-radius: 24px;
+    padding: 24px 32px;
+    max-width: 320px;
+    width: 80%;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+    animation: slideUp 0.3s ease;
+}
+
+.modal h3 {
+    margin: 0 0 16px 0;
+    font-size: 24px;
+    color: #ffd966;
+}
+
+.modal p {
+    margin: 0 0 24px 0;
+    font-size: 18px;
+    line-height: 1.4;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+}
+
+.modal-btn {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 40px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: transform 0.1s, opacity 0.2s;
+}
+
+.modal-btn:active {
+    transform: scale(0.97);
+}
+
+.btn-confirm {
+    background: #4caf50;
+    color: white;
+    box-shadow: 0 2px 8px rgba(76,175,80,0.4);
+}
+
+.btn-cancel {
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 </style>
 </head>
 
@@ -84,37 +177,98 @@ document.addEventListener("DOMContentLoaded", () => {
     const lineHalf = 1;
 
     const wrapper = document.getElementById("wrapper");
-    const offset = 0;
-
-    const players = getPlayers(); // 🔥 теперь из app.js
+    
+    // Глобальное состояние сетки
+    let matches = []; // Храним все матчи с их данными
+    let currentRoundMatches = []; // Матчи текущего раунда
+    let allMatchElements = new Map(); // Связь DOM элемента с объектом матча
+    let bracketData = null; // Структура всей сетки
+    
+    const players = getPlayers(); // получаем игроков
 
     function getCenterY(el) {
         return el.offsetTop + el.offsetHeight / 2;
     }
 
-    function createMatch(x, y, a, b=null, isChampion=false) {
+    // Создание карточки матча
+    function createMatch(x, y, a, b, isChampion = false, matchId = null) {
         const el = document.createElement("div");
         el.className = "glass-card";
-
         el.style.left = x + "px";
         el.style.top = y + "px";
 
-        if (isChampion) {
-            el.innerHTML = `
-                <div class="row">ЧЕМПИОН</div>
-                <div class="row"><b>${a.name}</b></div>
-            `;
-        } else if (!b) {
-            el.innerHTML = `<div class="row">${a.name}</div>`;
-        } else {
-            el.innerHTML = `
-                <div class="row">${a.name}</div>
-                <div class="row">${b.name}</div>
-            `;
-        }
-
+        const matchObj = {
+            id: matchId || Date.now() + Math.random() + Math.random(),
+            el,
+            x,
+            y,
+            a: a || null,
+            b: b || null,
+            winner: null,
+            isChampion,
+            round: Math.floor(x / stepX)
+        };
+        
+        updateMatchDisplay(matchObj);
+        
+        // Добавляем обработчик клика
+        el.addEventListener('click', (e) => {
+            e.stopPropagation();
+            handleMatchClick(matchObj);
+        });
+        
         wrapper.appendChild(el);
-        return el;
+        allMatchElements.set(matchObj.id, matchObj);
+        return matchObj;
+    }
+    
+    function updateMatchDisplay(matchObj) {
+        const { a, b, isChampion, winner } = matchObj;
+        const el = matchObj.el;
+        
+        // Определяем, нужно ли показывать none вместо имен
+        const shouldShowNone = (matchObj.round > 0 && !winner);
+        
+        if (isChampion && winner) {
+            el.innerHTML = `
+                <div class="row">🏆 ЧЕМПИОН 🏆</div>
+                <div class="row"><b>${winner.name || winner}</b></div>
+            `;
+        } else if (isChampion && !winner) {
+            el.innerHTML = `
+                <div class="row">🏆 ЧЕМПИОН 🏆</div>
+                <div class="row"><i>Ожидает</i></div>
+            `;
+        } else if (!a && !b) {
+            el.innerHTML = `<div class="row"><i>—</i></div>`;
+        } else if (winner) {
+            // Если есть победитель, показываем его
+            el.innerHTML = `<div class="row"><b>✓ ${winner.name || winner}</b></div>`;
+        } else if (shouldShowNone) {
+            // Для всех колонок кроме первой показываем "none"
+            if (a && b) {
+                el.innerHTML = `
+                    <div class="row">none</div>
+                    <div class="row">none</div>
+                `;
+            } else if (a && !b) {
+                el.innerHTML = `<div class="row">none</div>`;
+            } else {
+                el.innerHTML = `<div class="row"><i>—</i></div>`;
+            }
+        } else {
+            // Первая колонка - показываем реальные имена
+            if (a && b) {
+                el.innerHTML = `
+                    <div class="row">${a.name || a}</div>
+                    <div class="row">${b.name || b}</div>
+                `;
+            } else if (a && !b) {
+                el.innerHTML = `<div class="row">${a.name || a}</div>`;
+            } else {
+                el.innerHTML = `<div class="row"><i>—</i></div>`;
+            }
+        }
     }
 
     function drawH(x, y, w) {
@@ -136,7 +290,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function updateWrapperSize() {
-
         let minX = Infinity;
         let minY = Infinity;
         let maxX = 0;
@@ -156,8 +309,9 @@ document.addEventListener("DOMContentLoaded", () => {
             maxY = Math.max(maxY, y + h);
         });
 
+        if (minX === Infinity) return;
+        
         const padding = 8;
-
         const shiftX = padding - minX;
         const shiftY = padding - minY;
 
@@ -168,114 +322,318 @@ document.addEventListener("DOMContentLoaded", () => {
 
         wrapper.style.width = (maxX - minX + padding * 2) + "px";
         wrapper.style.height = (maxY - minY + padding * 2) + "px";
+        
+        // Обновляем координаты в объектах матчей
+        allMatchElements.forEach(match => {
+            match.x = match.el.offsetLeft;
+            match.y = match.el.offsetTop;
+        });
     }
 
-    function run(list) {
-
+    // Модальное окно
+    function showModal(playerName, onConfirm) {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <h3>🏆 Победа 🏆</h3>
+            <p>Подтвердить победу<br><strong style="color:#ffd966">${playerName}</strong>?</p>
+            <div class="modal-buttons">
+                <button class="modal-btn btn-confirm">Да, победил</button>
+                <button class="modal-btn btn-cancel">Отмена</button>
+            </div>
+        `;
+        
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        
+        const confirmBtn = modal.querySelector('.btn-confirm');
+        const cancelBtn = modal.querySelector('.btn-cancel');
+        
+        const closeModal = () => {
+            overlay.remove();
+        };
+        
+        confirmBtn.onclick = () => {
+            onConfirm();
+            closeModal();
+        };
+        
+        cancelBtn.onclick = closeModal;
+        
+        // Клик по оверлею
+        overlay.onclick = (e) => {
+            if (e.target === overlay) closeModal();
+        };
+    }
+    
+    // Обработка клика по матчу
+    function handleMatchClick(matchObj) {
+        // Нельзя кликать если уже есть победитель
+        if (matchObj.winner) {
+            return;
+        }
+        
+        // Для финала
+        if (matchObj.isChampion) {
+            return;
+        }
+        
+        // Определяем доступных игроков для выбора победителя
+        let availablePlayers = [];
+        
+        // Первая колонка - есть реальные игроки
+        if (matchObj.round === 0) {
+            if (matchObj.a) availablePlayers.push(matchObj.a);
+            if (matchObj.b) availablePlayers.push(matchObj.b);
+        } else {
+            // Другие колонки - нужно проверить, пришли ли уже победители из предыдущих матчей
+            if (matchObj.a && typeof matchObj.a === 'object') availablePlayers.push(matchObj.a);
+            if (matchObj.b && typeof matchObj.b === 'object') availablePlayers.push(matchObj.b);
+        }
+        
+        if (availablePlayers.length === 0) {
+            // Нет доступных игроков
+            return;
+        }
+        
+        // Если только один игрок (bye), сразу подтверждаем
+        if (availablePlayers.length === 1) {
+            setWinner(matchObj, availablePlayers[0]);
+            return;
+        }
+        
+        // Показываем модальное окно для выбора победителя
+        // Создаем выбор между двумя игроками
+        const playerNames = availablePlayers.map(p => p.name || p);
+        showModal(`${playerNames[0]} или ${playerNames[1]}?`, () => {
+            // Это упрощенная версия - нужно выбрать конкретного
+            showPlayerChoice(matchObj, availablePlayers);
+        });
+    }
+    
+    function showPlayerChoice(matchObj, players) {
+        const overlay = document.createElement('div');
+        overlay.className = 'modal-overlay';
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <h3>Выберите победителя</h3>
+            <div style="display:flex; flex-direction:column; gap:12px; margin:20px 0">
+                <button class="modal-btn btn-confirm" data-player="0">🏆 ${players[0].name || players[0]}</button>
+                <button class="modal-btn btn-confirm" data-player="1">🏆 ${players[1].name || players[1]}</button>
+            </div>
+            <button class="modal-btn btn-cancel" style="width:100%">Отмена</button>
+        `;
+        
+        overlay.appendChild(modal);
+        document.body.appendChild(overlay);
+        
+        const btns = modal.querySelectorAll('[data-player]');
+        btns.forEach((btn, idx) => {
+            btn.onclick = () => {
+                const playerIdx = parseInt(btn.dataset.player);
+                setWinner(matchObj, players[playerIdx]);
+                overlay.remove();
+            };
+        });
+        
+        const cancelBtn = modal.querySelector('.btn-cancel');
+        cancelBtn.onclick = () => overlay.remove();
+        
+        overlay.onclick = (e) => {
+            if (e.target === overlay) overlay.remove();
+        };
+    }
+    
+    // Установка победителя и продвижение
+    function setWinner(matchObj, winner) {
+        if (matchObj.winner) return;
+        
+        matchObj.winner = winner;
+        updateMatchDisplay(matchObj);
+        
+        // Находим следующий матч, куда нужно продвинуть победителя
+        const nextMatch = findNextMatch(matchObj);
+        
+        if (nextMatch) {
+            // Определяем, в какую позицию (a или b) вставить победителя
+            if (!nextMatch.a) {
+                nextMatch.a = winner;
+                updateMatchDisplay(nextMatch);
+            } else if (!nextMatch.b && nextMatch.a !== winner) {
+                nextMatch.b = winner;
+                updateMatchDisplay(nextMatch);
+            }
+            
+            // Если оба слота заполнены, но победитель еще не выбран, не делаем авто-выбор
+            // Пользователь сам выберет победителя в следующем матче
+        }
+        
+        // Перерисовываем линии (они не меняются, но обновляем размер wrapper)
+        requestAnimationFrame(updateWrapperSize);
+    }
+    
+    function findNextMatch(currentMatch) {
+        // Ищем матч, который находится правее и на той же высоте
+        const targetRound = currentMatch.round + 1;
+        
+        for (let match of allMatchElements.values()) {
+            if (match.round === targetRound && !match.isChampion) {
+                // Проверяем, связаны ли матчи по вертикали
+                const currentCenterY = currentMatch.y + currentMatch.el.offsetHeight / 2;
+                const nextCenterY = match.y + match.el.offsetHeight / 2;
+                
+                // Если центры примерно совпадают (в пределах 100px)
+                if (Math.abs(currentCenterY - nextCenterY) < 150) {
+                    return match;
+                }
+            }
+        }
+        
+        // Если это был полуфинал, ищем финал
+        if (currentMatch.round === Math.floor(stepXCount())) {
+            for (let match of allMatchElements.values()) {
+                if (match.isChampion) {
+                    if (!match.winner) {
+                        match.winner = null;
+                        match.a = null;
+                        match.b = null;
+                        updateMatchDisplay(match);
+                    }
+                    if (!match.a) {
+                        match.a = currentMatch.winner;
+                        updateMatchDisplay(match);
+                        return null;
+                    } else if (!match.b && match.a !== currentMatch.winner) {
+                        match.b = currentMatch.winner;
+                        updateMatchDisplay(match);
+                        return null;
+                    }
+                    return null;
+                }
+            }
+        }
+        
+        return null;
+    }
+    
+    function stepXCount() {
+        let rounds = 0;
+        let size = players.length;
+        while (size > 1) {
+            size = Math.ceil(size / 2);
+            rounds++;
+        }
+        return rounds;
+    }
+    
+    // Построение сетки
+    function buildBracket(list) {
+        // Очищаем wrapper
+        wrapper.innerHTML = '';
+        allMatchElements.clear();
+        
         let round = 0;
-        let current = [];
-
+        let currentMatches = [];
+        const offset = 0;
+        
+        // Первый раунд
         for (let i = 0; i < list.length; i += 2) {
-
             const a = list[i];
-            const b = list[i + 1];
-
+            const b = list[i + 1] || null;
             const y = i * stepY;
-
-            const el = createMatch(offset, y, a, b);
-
-            const winner = (!b)
-                ? a
-                : (Math.random() > 0.5 ? a : b);
-
-            current.push({
-                el,
+            
+            const match = createMatch(offset, y, a, b, false, `r0_${i}`);
+            match.round = 0;
+            
+            currentMatches.push({
+                match,
                 x: offset,
-                data: winner
+                data: match
             });
         }
-
+        
         round++;
-
-        while (current.length > 1) {
-
-            const next = [];
-
-            for (let i = 0; i < current.length; i += 2) {
-
-                const A = current[i];
-                const B = current[i + 1];
-
-                const el = createMatch(
+        
+        // Последующие раунды
+        while (currentMatches.length > 1) {
+            const nextMatches = [];
+            
+            for (let i = 0; i < currentMatches.length; i += 2) {
+                const leftMatchObj = currentMatches[i];
+                const rightMatchObj = currentMatches[i + 1];
+                
+                const newMatch = createMatch(
                     offset + round * stepX,
                     0,
-                    A.data,
-                    B?.data
+                    null,
+                    null,
+                    false,
+                    `r${round}_${i}`
                 );
-
-                const centerA = getCenterY(A.el);
-                const centerB = B ? getCenterY(B.el) : centerA;
-
+                newMatch.round = round;
+                
+                const centerA = leftMatchObj.match.y + leftMatchObj.match.el.offsetHeight / 2;
+                const centerB = rightMatchObj ? rightMatchObj.match.y + rightMatchObj.match.el.offsetHeight / 2 : centerA;
                 const center = (centerA + centerB) / 2;
-
-                el.style.top = (center - el.offsetHeight / 2) + "px";
-
-                const startX = A.x + cardW;
+                
+                newMatch.el.style.top = (center - newMatch.el.offsetHeight / 2) + "px";
+                newMatch.y = newMatch.el.offsetTop;
+                
+                const startX = leftMatchObj.x + cardW;
                 const midX = startX + 30;
                 const endX = offset + round * stepX;
-
+                
                 drawH(startX, centerA, 30);
-
-                if (B) {
+                
+                if (rightMatchObj) {
                     drawH(startX, centerB, 30);
-
-                    drawV(
-                        midX,
-                        Math.min(centerA, centerB),
-                        Math.abs(centerA - centerB)
-                    );
+                    drawV(midX, Math.min(centerA, centerB), Math.abs(centerA - centerB));
                 }
-
+                
                 drawH(midX, center, endX - midX);
-
-                const winner =
-                    (!B) ? A.data :
-                    (Math.random() > 0.5 ? A.data : B.data);
-
-                next.push({
-                    el,
+                
+                nextMatches.push({
+                    match: newMatch,
                     x: offset + round * stepX,
-                    data: winner
+                    data: newMatch
                 });
             }
-
-            current = next;
+            
+            currentMatches = nextMatches;
             round++;
         }
-
-        if (current.length === 1) {
-
-            const A = current[0];
-
-            const el = createMatch(
+        
+        // Финальный матч (чемпион)
+        if (currentMatches.length === 1) {
+            const lastMatch = currentMatches[0];
+            const championMatch = createMatch(
                 offset + round * stepX,
                 0,
-                A.data,
                 null,
-                true
+                null,
+                true,
+                'champion'
             );
-
-            const center = getCenterY(A.el);
-
-            el.style.top = (center - el.offsetHeight / 2) + "px";
-
-            drawH(A.x + cardW, center, 60);
+            championMatch.round = round;
+            championMatch.isChampion = true;
+            
+            const center = lastMatch.match.y + lastMatch.match.el.offsetHeight / 2;
+            championMatch.el.style.top = (center - championMatch.el.offsetHeight / 2) + "px";
+            championMatch.y = championMatch.el.offsetTop;
+            
+            drawH(lastMatch.x + cardW, center, 60);
         }
+        
+        requestAnimationFrame(updateWrapperSize);
     }
-
-    run(players);
-    requestAnimationFrame(updateWrapperSize);
-
+    
+    // Запуск
+    buildBracket(players);
 });
 
 </script>
