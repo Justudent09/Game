@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Bracket Centered Champion</title>
+<title>Bracket Perfect Centered</title>
 
 <style>
 body {
@@ -38,25 +38,28 @@ body {
 
     backdrop-filter: blur(40px);
     -webkit-backdrop-filter: blur(40px);
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.2);
     border-radius: 16px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
     overflow: hidden;
 }
 
 .row {
     padding: 10px 12px;
-    text-align: center; 
+    text-align: center;
 }
 
 .row + .row {
     border-top: 1px solid rgba(255,255,255,0.15);
 }
 
-.value {
-    opacity: 0.9;
-    font-weight: bold;
+.line {
+    position: absolute;
+    background: rgba(255,255,255,0.35);
 }
+
+.h-line { height: 2px; }
+.v-line { width: 2px; }
 </style>
 </head>
 
@@ -74,14 +77,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const stepX = 260;
     const stepY = 50;
-    const cardH = 70;
+    const cardW = 200;
+    const lineHalf = 1;
 
     const wrapper = document.getElementById("wrapper");
     const offset = window.innerWidth * 0.05;
 
     let players = Array.from({length: 17}, (_, i) => ({
-        name: "Player " + (i + 1)
+        name: "TEAM " + (i + 1)
     }));
+
+    function getCenterY(el) {
+        return el.offsetTop + el.offsetHeight / 2;
+    }
 
     function createMatch(x, y, a, b=null, isChampion=false) {
 
@@ -93,20 +101,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (isChampion) {
             el.innerHTML = `
-                <div class="row">
-                    ЧЕМПИОН
-                </div>
-                <div class="row">
-                    <b>${a.name}</b>
-                </div>
+                <div class="row">ЧЕМПИОН</div>
+                <div class="row"><b>${a.name}</b></div>
             `;
-        }
-        else if (!b) {
-            el.innerHTML = `
-                <div class="row">${a.name}</div>
-            `;
-        }
-        else {
+        } else if (!b) {
+            el.innerHTML = `<div class="row">${a.name}</div>`;
+        } else {
             el.innerHTML = `
                 <div class="row">${a.name}</div>
                 <div class="row">${b.name}</div>
@@ -115,14 +115,33 @@ document.addEventListener("DOMContentLoaded", () => {
 
         wrapper.appendChild(el);
 
-        return { yCenter: y + cardH / 2 };
+        return el;
+    }
+
+    function drawH(x, y, w) {
+        const l = document.createElement("div");
+        l.className = "line h-line";
+        l.style.left = x + "px";
+        l.style.top = (y - lineHalf) + "px";
+        l.style.width = w + "px";
+        wrapper.appendChild(l);
+    }
+
+    function drawV(x, y, h) {
+        const l = document.createElement("div");
+        l.className = "line v-line";
+        l.style.left = (x - lineHalf) + "px";
+        l.style.top = y + "px";
+        l.style.height = h + "px";
+        wrapper.appendChild(l);
     }
 
     function run(list) {
 
         let round = 0;
-        let currentMatches = [];
+        let current = [];
 
+        // 1 раунд
         for (let i = 0; i < list.length; i += 2) {
 
             const a = list[i];
@@ -130,58 +149,97 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const y = i * stepY;
 
-            createMatch(offset + round * stepX, y, a, b);
+            const el = createMatch(offset, y, a, b);
 
             const winner = (!b)
                 ? a
                 : (Math.random() > 0.5 ? a : b);
 
-            currentMatches.push({
-                y: y + cardH / 2,
+            current.push({
+                el,
+                x: offset,
                 data: winner
             });
         }
 
         round++;
 
-        while (currentMatches.length > 1) {
+        while (current.length > 1) {
 
             const next = [];
 
-            for (let i = 0; i < currentMatches.length; i += 2) {
+            for (let i = 0; i < current.length; i += 2) {
 
-                const A = currentMatches[i];
-                const B = currentMatches[i + 1];
+                const A = current[i];
+                const B = current[i + 1];
 
-                const yCenter = B ? (A.y + B.y) / 2 : A.y;
-                const y = yCenter - cardH / 2;
+                const el = createMatch(
+                    offset + round * stepX,
+                    0,
+                    A.data,
+                    B?.data
+                );
 
-                createMatch(offset + round * stepX, y, A.data, B?.data);
+                const centerA = getCenterY(A.el);
+                const centerB = B ? getCenterY(B.el) : centerA;
+
+                const center = (centerA + centerB) / 2;
+
+                el.style.top = (center - el.offsetHeight / 2) + "px";
+
+                const startX = A.x + cardW;
+                const midX = startX + 30;
+                const endX = offset + round * stepX;
+
+                drawH(startX, centerA, 30);
+
+                if (B) {
+                    drawH(startX, centerB, 30);
+
+                    drawV(
+                        midX,
+                        Math.min(centerA, centerB),
+                        Math.abs(centerA - centerB)
+                    );
+                }
+
+                drawH(midX, center, endX - midX);
 
                 const winner =
                     (!B) ? A.data :
                     (Math.random() > 0.5 ? A.data : B.data);
 
                 next.push({
-                    y: yCenter,
+                    el,
+                    x: offset + round * stepX,
                     data: winner
                 });
             }
 
-            currentMatches = next;
+            current = next;
             round++;
         }
 
-        if (currentMatches.length === 1) {
+        if (current.length === 1) {
 
-            const champ = currentMatches[0];
+            const A = current[0];
 
-            createMatch(
+            const el = createMatch(
                 offset + round * stepX,
-                champ.y - cardH / 2,
-                champ.data,
+                0,
+                A.data,
                 null,
                 true
+            );
+
+            const center = getCenterY(A.el);
+
+            el.style.top = (center - el.offsetHeight / 2) + "px";
+
+            drawH(
+                A.x + cardW,
+                center,
+                60
             );
         }
     }
