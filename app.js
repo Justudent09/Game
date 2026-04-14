@@ -1,5 +1,4 @@
 export function getPlayers() {
-
     const names = [
         "ShadowFox",
         "NeonBlade",
@@ -20,7 +19,7 @@ export function getPlayers() {
         "CrimsonKing"
     ];
 
-    // 🔀 перемешка (Fisher-Yates)
+    // Перемешка
     for (let i = names.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [names[i], names[j]] = [names[j], names[i]];
