@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<title>Bracket Fixed Padding</title>
+<title>Bracket Random Players</title>
 
 <style>
 body {
@@ -73,7 +73,9 @@ body {
     <div class="wrapper" id="wrapper"></div>
 </div>
 
-<script>
+<script type="module">
+
+import { getPlayers } from './app.js';
 
 document.addEventListener("DOMContentLoaded", () => {
 
@@ -85,9 +87,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const wrapper = document.getElementById("wrapper");
     const offset = 0;
 
-    let players = Array.from({length: 17}, (_, i) => ({
-        name: "TEAM " + (i + 1)
-    }));
+    const players = getPlayers(); // 🔥 теперь из app.js
 
     function getCenterY(el) {
         return el.offsetTop + el.offsetHeight / 2;
@@ -146,7 +146,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const elements = document.querySelectorAll(".glass-card, .line");
 
         elements.forEach(el => {
-
             const x = el.offsetLeft;
             const y = el.offsetTop;
             const w = el.offsetWidth;
@@ -158,7 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
             maxY = Math.max(maxY, y + h);
         });
 
-        const padding = 50;
+        const padding = 200;
 
         const shiftX = padding - minX;
         const shiftY = padding - minY;
@@ -276,7 +275,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     run(players);
-
     requestAnimationFrame(updateWrapperSize);
 
 });
