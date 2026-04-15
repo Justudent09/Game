@@ -1,0 +1,17 @@
+const TOURNAMENT_PLAYERS = [
+    "ShadowFox", 
+    "NeonBlade", 
+    "ZeroPulse", 
+    "DarkSniper", 
+    "GhostRider", 
+    "IronClaw", 
+    "NightWolf", 
+    "StormBreaker", 
+    "CyberKnight", 
+    "PhantomX", 
+    "Vortex", 
+    "BlazeStorm", 
+    "SilentEdge", 
+    "ToxicRush", 
+    "CrimsonKing"
+];
