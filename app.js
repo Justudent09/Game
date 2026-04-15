@@ -2,6 +2,23 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
+// Настраиваем системную кнопку настроек (шестеренка вверху)
+tg.SettingsButton.show();
+tg.SettingsButton.onClick(() => {
+    // При нажатии на шестеренку спрашиваем о сбросе
+    tg.showConfirm("Вы уверены, что хотите полностью сбросить прогресс турнира?", (isConfirmed) => {
+        if (isConfirmed) {
+            localStorage.removeItem("tournament_bracket_state");
+            if (tg.CloudStorage) {
+                tg.CloudStorage.removeItem("tournament_bracket_state");
+            }
+            tg.showAlert("Данные удалены. Приложение будет перезагружено.", () => {
+                location.reload();
+            });
+        }
+    });
+});
+
 document.addEventListener("DOMContentLoaded", () => {
     const STORAGE_KEY = "tournament_bracket_state";
     const wrapper = document.getElementById("wrapper");
@@ -14,11 +31,10 @@ document.addEventListener("DOMContentLoaded", () => {
     let matchData = {}; 
     let players = [];
 
-    // --- ЛОГИКА СОХРАНЕНИЯ ---
+    // --- ЛОГИКА ХРАНЕНИЯ ---
 
     function saveState() {
         const state = {};
-        // Сохраняем текст каждой ячейки (имена победителей)
         document.querySelectorAll('.row[id]').forEach(row => {
             state[row.id] = {
                 text: row.innerText,
@@ -26,11 +42,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 isChamp: row.classList.contains('champion-text')
             };
         });
-        // Сохраняем также порядок игроков (чтобы сетка не перемешивалась заново)
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        const dataToSave = JSON.stringify({
             players: players,
             cells: state
-        }));
+        });
+        
+        localStorage.setItem(STORAGE_KEY, dataToSave);
+        // Также дублируем в CloudStorage для надежности
+        if (tg.CloudStorage) {
+            tg.CloudStorage.setItem(STORAGE_KEY, dataToSave);
+        }
     }
 
     function loadState() {
@@ -39,28 +60,21 @@ document.addEventListener("DOMContentLoaded", () => {
         return JSON.parse(saved);
     }
 
-    // Функция для сброса (можно вызвать из консоли или добавить кнопку)
-    window.resetTournament = () => {
-        if(confirm("Сбросить текущий прогресс турнира?")) {
-            localStorage.removeItem(STORAGE_KEY);
-            location.reload();
-        }
-    };
-
-    // --- ОСНОВНАЯ ЛОГИКА ---
+    // --- ИНИЦИАЛИЗАЦИЯ ДАННЫХ ---
 
     const savedData = loadState();
 
     if (savedData) {
         players = savedData.players;
     } else {
-        // Если сохранений нет, берем из players.js и перемешиваем
         players = [...TOURNAMENT_PLAYERS];
         for (let i = players.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [players[i], players[j]] = [players[j], players[i]];
         }
     }
+
+    // --- ОТРИСОВКА (ФУНКЦИИ) ---
 
     function getCenterY(el) { return el.offsetTop + el.offsetHeight / 2; }
 
@@ -71,7 +85,6 @@ document.addEventListener("DOMContentLoaded", () => {
         el.style.top = y + "px";
         el.dataset.matchId = matchId;
 
-        // Восстанавливаем данные из сохранения, если они есть
         let contentA = aName;
         let contentB = bName;
         let styleA = "";
@@ -97,13 +110,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 <div class="row" style="font-size:10px; opacity:0.5;">ЧЕМПИОН</div>
                 <div class="row ${classA}" id="${matchId}-0" ${styleA}>${contentA}</div>
             `;
-        } else if (bName === null) {
-            el.innerHTML = `<div class="row" id="${matchId}-0" ${styleA}>${contentA}</div>`;
         } else {
-            el.innerHTML = `
-                <div class="row" id="${matchId}-0" ${styleA}>${contentA}</div>
-                <div class="row" id="${matchId}-1" ${styleB}>${contentB}</div>
-            `;
+            const row2 = (bName === null) ? "" : `<div class="row" id="${matchId}-1" ${styleB}>${contentB}</div>`;
+            el.innerHTML = `<div class="row" id="${matchId}-0" ${styleA}>${contentA}</div>${row2}`;
         }
 
         if (matchId !== "CHAMP") {
@@ -156,32 +165,22 @@ document.addEventListener("DOMContentLoaded", () => {
                 setWinner(m.nextMatchId, name);
             }
         }
-        
-        // Сохраняем после каждого изменения
         saveState();
     }
-
-    // --- ФУНКЦИИ ОТРИСОВКИ ЛИНИЙ (БЕЗ ИЗМЕНЕНИЙ) ---
 
     function drawH(x, y, w) {
         const l = document.createElement("div");
         l.className = "line h-line";
-        l.style.left = x + "px";
-        l.style.top = (y - lineHalf) + "px";
-        l.style.width = w + "px";
-        wrapper.appendChild(l);
+        l.style.left = x + "px"; l.style.top = (y - lineHalf) + "px";
+        l.style.width = w + "px"; wrapper.appendChild(l);
     }
 
     function drawV(x, y, h) {
         const l = document.createElement("div");
         l.className = "line v-line";
-        l.style.left = (x - lineHalf) + "px";
-        l.style.top = y + "px";
-        l.style.height = h + "px";
-        wrapper.appendChild(l);
+        l.style.left = (x - lineHalf) + "px"; l.style.top = y + "px";
+        l.style.height = h + "px"; wrapper.appendChild(l);
     }
-
-    // --- RUN (С ЛОГИКОЙ ВОССТАНОВЛЕНИЯ) ---
 
     function run(list) {
         let round = 0;
@@ -194,8 +193,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const el = createMatch(offset, i * stepY, a, b, false, mid);
             matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
             current.push({ el, x: offset, mid });
-            
-            // Если игрок один и это ПЕРВЫЙ запуск (нет сохраненки), пушим дальше
             if (b === null && !savedData) setTimeout(() => setWinner(mid, a), 50);
         }
 
@@ -203,30 +200,19 @@ document.addEventListener("DOMContentLoaded", () => {
         while (current.length > 1) {
             const next = [];
             for (let i = 0; i < current.length; i += 2) {
-                const A = current[i];
-                const B = current[i + 1];
+                const A = current[i]; const B = current[i + 1];
                 const mid = `r${round}m${i}`;
                 const el = createMatch(offset + round * stepX, 0, "None", B ? "None" : null, false, mid);
                 matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
-                const centerA = getCenterY(A.el);
-                const centerB = B ? getCenterY(B.el) : centerA;
-                const center = (centerA + centerB) / 2;
+                const cA = getCenterY(A.el); const cB = B ? getCenterY(B.el) : cA;
+                const center = (cA + cB) / 2;
                 el.style.top = (center - el.offsetHeight / 2) + "px";
-                const startX = A.x + cardW;
-                const midX = startX + 30;
-                const endX = offset + round * stepX;
-                drawH(startX, centerA, 30);
-                if (B) {
-                    drawH(startX, centerB, 30);
-                    drawV(midX, Math.min(centerA, centerB), Math.abs(centerA - centerB));
-                }
-                drawH(midX, center, endX - midX);
-                matchData[A.mid].nextMatchId = mid;
-                matchData[A.mid].nextSlot = 0;
-                if (B) {
-                    matchData[B.mid].nextMatchId = mid;
-                    matchData[B.mid].nextSlot = 1;
-                }
+                const sX = A.x + cardW; const mX = sX + 30; const eX = offset + round * stepX;
+                drawH(sX, cA, 30);
+                if (B) { drawH(sX, cB, 30); drawV(mX, Math.min(cA, cB), Math.abs(cA - cB)); }
+                drawH(mX, center, eX - mX);
+                matchData[A.mid].nextMatchId = mid; matchData[A.mid].nextSlot = 0;
+                if (B) { matchData[B.mid].nextMatchId = mid; matchData[B.mid].nextSlot = 1; }
                 next.push({ el, x: offset + round * stepX, mid });
             }
             current = next;
@@ -234,34 +220,29 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (current.length === 1) {
-            const A = current[0];
-            const mid = "CHAMP";
+            const A = current[0]; const mid = "CHAMP";
             const el = createMatch(offset + round * stepX, 0, "None", null, true, mid);
             const center = getCenterY(A.el);
             el.style.top = (center - el.offsetHeight / 2) + "px";
             drawH(A.x + cardW, center, 60);
             matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
-            matchData[A.mid].nextMatchId = mid;
-            matchData[A.mid].nextSlot = 0;
+            matchData[A.mid].nextMatchId = mid; matchData[A.mid].nextSlot = 0;
         }
     }
 
     function updateWrapperSize() {
         let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
-        const elements = document.querySelectorAll(".glass-card, .line");
-        elements.forEach(el => {
-            const x = el.offsetLeft, y = el.offsetTop;
-            minX = Math.min(minX, x); minY = Math.min(minY, y);
-            maxX = Math.max(maxX, x + el.offsetWidth); maxY = Math.max(maxY, y + el.offsetHeight);
+        document.querySelectorAll(".glass-card, .line").forEach(el => {
+            minX = Math.min(minX, el.offsetLeft); minY = Math.min(minY, el.offsetTop);
+            maxX = Math.max(maxX, el.offsetLeft + el.offsetWidth); maxY = Math.max(maxY, el.offsetTop + el.offsetHeight);
         });
-        const padding = 50;
-        const shiftX = padding - minX, shiftY = padding - minY;
-        elements.forEach(el => {
-            el.style.left = (el.offsetLeft + shiftX) + "px";
-            el.style.top = (el.offsetTop + shiftY) + "px";
+        const p = 50;
+        document.querySelectorAll(".glass-card, .line").forEach(el => {
+            el.style.left = (el.offsetLeft + (p - minX)) + "px";
+            el.style.top = (el.offsetTop + (p - minY)) + "px";
         });
-        wrapper.style.width = (maxX - minX + padding * 2) + "px";
-        wrapper.style.height = (maxY - minY + padding * 2) + "px";
+        wrapper.style.width = (maxX - minX + p * 2) + "px";
+        wrapper.style.height = (maxY - minY + p * 2) + "px";
     }
 
     run(players);
