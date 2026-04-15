@@ -3,23 +3,64 @@ const tg = window.Telegram.WebApp;
 tg.expand();
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Берём список из players.js
-    let players = [...TOURNAMENT_PLAYERS];
-
-    // Перемешивание списка
-    for (let i = players.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [players[i], players[j]] = [players[j], players[i]];
-    }
-
+    const STORAGE_KEY = "tournament_bracket_state";
+    const wrapper = document.getElementById("wrapper");
     const stepX = 260;
     const stepY = 50;
     const cardW = 200;
     const lineHalf = 1;
-    const wrapper = document.getElementById("wrapper");
     const offset = 0;
 
     let matchData = {}; 
+    let players = [];
+
+    // --- ЛОГИКА СОХРАНЕНИЯ ---
+
+    function saveState() {
+        const state = {};
+        // Сохраняем текст каждой ячейки (имена победителей)
+        document.querySelectorAll('.row[id]').forEach(row => {
+            state[row.id] = {
+                text: row.innerText,
+                color: row.style.color,
+                isChamp: row.classList.contains('champion-text')
+            };
+        });
+        // Сохраняем также порядок игроков (чтобы сетка не перемешивалась заново)
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({
+            players: players,
+            cells: state
+        }));
+    }
+
+    function loadState() {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (!saved) return null;
+        return JSON.parse(saved);
+    }
+
+    // Функция для сброса (можно вызвать из консоли или добавить кнопку)
+    window.resetTournament = () => {
+        if(confirm("Сбросить текущий прогресс турнира?")) {
+            localStorage.removeItem(STORAGE_KEY);
+            location.reload();
+        }
+    };
+
+    // --- ОСНОВНАЯ ЛОГИКА ---
+
+    const savedData = loadState();
+
+    if (savedData) {
+        players = savedData.players;
+    } else {
+        // Если сохранений нет, берем из players.js и перемешиваем
+        players = [...TOURNAMENT_PLAYERS];
+        for (let i = players.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [players[i], players[j]] = [players[j], players[i]];
+        }
+    }
 
     function getCenterY(el) { return el.offsetTop + el.offsetHeight / 2; }
 
@@ -30,21 +71,41 @@ document.addEventListener("DOMContentLoaded", () => {
         el.style.top = y + "px";
         el.dataset.matchId = matchId;
 
+        // Восстанавливаем данные из сохранения, если они есть
+        let contentA = aName;
+        let contentB = bName;
+        let styleA = "";
+        let styleB = "";
+        let classA = "";
+
+        if (savedData && savedData.cells) {
+            const sA = savedData.cells[`${matchId}-0`];
+            const sB = savedData.cells[`${matchId}-1`];
+            if (sA) {
+                contentA = sA.text;
+                styleA = `style="color: ${sA.color}"`;
+                if (sA.isChamp) classA = "champion-text";
+            }
+            if (sB) {
+                contentB = sB.text;
+                styleB = `style="color: ${sB.color}"`;
+            }
+        }
+
         if (isChampion) {
             el.innerHTML = `
                 <div class="row" style="font-size:10px; opacity:0.5;">ЧЕМПИОН</div>
-                <div class="row" id="${matchId}-0">${aName}</div>
+                <div class="row ${classA}" id="${matchId}-0" ${styleA}>${contentA}</div>
             `;
         } else if (bName === null) {
-            el.innerHTML = `<div class="row" id="${matchId}-0">${aName}</div>`;
+            el.innerHTML = `<div class="row" id="${matchId}-0" ${styleA}>${contentA}</div>`;
         } else {
             el.innerHTML = `
-                <div class="row" id="${matchId}-0">${aName}</div>
-                <div class="row" id="${matchId}-1">${bName}</div>
+                <div class="row" id="${matchId}-0" ${styleA}>${contentA}</div>
+                <div class="row" id="${matchId}-1" ${styleB}>${contentB}</div>
             `;
         }
 
-        // На чемпиона нажать нельзя
         if (matchId !== "CHAMP") {
             el.onclick = () => openTelegramPopup(matchId);
         }
@@ -79,7 +140,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const p1El = document.getElementById(matchId + "-0");
         const p2El = document.getElementById(matchId + "-1");
 
-        // Подсветка победителя/проигравшего
         if (p1El) p1El.style.color = (p1El.innerText === name) ? "#44ff44" : "#ff4444";
         if (p2El) p2El.style.color = (p2El.innerText === name) ? "#44ff44" : "#ff4444";
 
@@ -87,18 +147,21 @@ document.addEventListener("DOMContentLoaded", () => {
             const target = document.getElementById(m.nextMatchId + "-" + m.nextSlot);
             target.innerText = name;
             
-            // Если это блок чемпиона — делаем золотым
             if (m.nextMatchId === "CHAMP") {
                 target.classList.add("champion-text");
             }
 
-            // Авто-проход для нечетных матчей (но не чемпиона)
             const nextMatchEl = document.querySelector(`[data-match-id="${m.nextMatchId}"]`);
             if (nextMatchEl && nextMatchEl.querySelectorAll('.row').length === 1 && m.nextMatchId !== "CHAMP") {
                 setWinner(m.nextMatchId, name);
             }
         }
+        
+        // Сохраняем после каждого изменения
+        saveState();
     }
+
+    // --- ФУНКЦИИ ОТРИСОВКИ ЛИНИЙ (БЕЗ ИЗМЕНЕНИЙ) ---
 
     function drawH(x, y, w) {
         const l = document.createElement("div");
@@ -118,11 +181,12 @@ document.addEventListener("DOMContentLoaded", () => {
         wrapper.appendChild(l);
     }
 
+    // --- RUN (С ЛОГИКОЙ ВОССТАНОВЛЕНИЯ) ---
+
     function run(list) {
         let round = 0;
         let current = [];
 
-        // Раунд 1
         for (let i = 0; i < list.length; i += 2) {
             const a = list[i];
             const b = list[i+1] || null;
@@ -130,7 +194,9 @@ document.addEventListener("DOMContentLoaded", () => {
             const el = createMatch(offset, i * stepY, a, b, false, mid);
             matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
             current.push({ el, x: offset, mid });
-            if (b === null) setTimeout(() => setWinner(mid, a), 50);
+            
+            // Если игрок один и это ПЕРВЫЙ запуск (нет сохраненки), пушим дальше
+            if (b === null && !savedData) setTimeout(() => setWinner(mid, a), 50);
         }
 
         round++;
@@ -167,7 +233,6 @@ document.addEventListener("DOMContentLoaded", () => {
             round++;
         }
 
-        // Финальный блок чемпиона
         if (current.length === 1) {
             const A = current[0];
             const mid = "CHAMP";
