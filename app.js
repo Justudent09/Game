@@ -12,15 +12,14 @@ document.addEventListener("DOMContentLoaded", () => {
     const wrapper = document.getElementById("wrapper");
     const STORAGE_KEY = "tournament_state";
     
-    // Настройки размеров
     const cardW = 180;
-    const cardH = 84; // Примерная высота карточки с 2 строками
-    const stepX = 240; 
-    
+    const cardH = 80;
+    const stepX = 260; 
+    const sidePadding = window.innerWidth * 0.05; // 5vw
+
     let matchData = {};
     let players = [];
 
-    // Загрузка или инициализация
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (saved) {
         players = saved.players;
@@ -29,10 +28,11 @@ document.addEventListener("DOMContentLoaded", () => {
         players.sort(() => Math.random() - 0.5);
     }
 
-    // Рассчитываем динамический stepY, но не меньше высоты карточки + отступ
-    const availableHeight = wrapper.offsetHeight;
+    // Расчет доступной высоты внутри враппера (с учетом padding-top)
+    const topPadding = parseFloat(getComputedStyle(wrapper).paddingTop);
+    const availableHeight = wrapper.offsetHeight - topPadding - 40;
     const firstRoundMatches = Math.ceil(players.length / 2);
-    const stepY = Math.max(cardH + 20, availableHeight / firstRoundMatches);
+    const stepY = availableHeight / firstRoundMatches;
 
     function save() {
         const cells = {};
@@ -45,8 +45,8 @@ document.addEventListener("DOMContentLoaded", () => {
     function createMatch(x, y, p1, p2, isChamp, mid) {
         const el = document.createElement("div");
         el.className = "glass-card";
-        el.style.left = x + "px";
-        el.style.top = y + "px";
+        el.style.left = (sidePadding + x) + "px";
+        el.style.top = (topPadding + y) + "px";
         
         let s1 = "", s2 = "", c1 = p1, c2 = p2, classChamp = "";
         if (saved && saved.cells) {
@@ -65,7 +65,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (c1 && c1 !== "None") b.push({id:"1", type:"default", text:c1});
                 if (c2 && c2 !== "None") b.push({id:"2", type:"default", text:c2});
                 b.push({type:"cancel"});
-                tg.showPopup({title:"Победитель", message:"Кто прошел дальше?", buttons:b}, (btn) => {
+                tg.showPopup({title:"Победитель", message:"Кто прошел?", buttons:b}, (btn) => {
                     if (btn === "1") setWinner(mid, c1);
                     if (btn === "2") setWinner(mid, c2);
                 });
@@ -88,8 +88,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 nextEl.innerText = name;
                 if (m.next === "CHAMP") nextEl.classList.add("champion-text");
                 save();
-                // Авто-проход если матч из 1 игрока
-                const parentMatch = document.querySelector(`[data-id="${m.next}"]`);
                 if (m.next !== "CHAMP" && !document.getElementById(m.next + "-1")) {
                     setWinner(m.next, name);
                 }
@@ -100,8 +98,10 @@ document.addEventListener("DOMContentLoaded", () => {
     function drawLine(x, y, w, h) {
         const l = document.createElement("div");
         l.className = "line";
-        l.style.left = x + "px"; l.style.top = y + "px";
-        l.style.width = w + "px"; l.style.height = h + "px";
+        l.style.left = (sidePadding + x) + "px";
+        l.style.top = (topPadding + y) + "px";
+        l.style.width = Math.max(w, 0) + "px";
+        l.style.height = Math.max(h, 0) + "px";
         wrapper.appendChild(l);
     }
 
@@ -124,22 +124,22 @@ document.addEventListener("DOMContentLoaded", () => {
             for (let i = 0; i < current.length; i += 2) {
                 const mid = `r${round}m${i}`;
                 const a = current[i], b = current[i+1];
-                const yA = a.el.offsetTop + cardH/2;
-                const yB = b ? b.el.offsetTop + cardH/2 : yA;
+                const yA = a.el.offsetTop - topPadding + cardH/2;
+                const yB = b ? b.el.offsetTop - topPadding + cardH/2 : yA;
                 const yM = (yA + yB) / 2;
                 
                 const el = createMatch(round * stepX, yM - cardH/2, "None", b ? "None" : null, false, mid);
-                el.dataset.id = mid;
                 matchData[mid] = { next: null, slot: 0 };
                 
-                // Линии
-                drawLine(a.x + cardW, yA, 30, 2);
+                // Рисуем линии
+                const lineX = a.x + cardW;
+                drawLine(lineX, yA, 30, 2);
                 if (b) {
-                    drawLine(a.x + cardW, yB, 30, 2);
-                    drawLine(a.x + cardW + 30, Math.min(yA, yB), 2, Math.abs(yA - yB));
-                    drawLine(a.x + cardW + 30, yM, stepX - cardW - 30, 2);
+                    drawLine(lineX, yB, 30, 2);
+                    drawLine(lineX + 30, Math.min(yA, yB), 2, Math.abs(yA - yB));
+                    drawLine(lineX + 30, yM, stepX - cardW - 30, 2);
                 } else {
-                    drawLine(a.x + cardW, yA, stepX - cardW, 2);
+                    drawLine(lineX, yA, stepX - cardW, 2);
                 }
 
                 matchData[a.mid].next = mid; matchData[a.mid].slot = 0;
@@ -151,12 +151,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // Финал
         const last = current[0];
-        const fY = last.el.offsetTop + cardH/2;
-        const champ = createMatch((round + 1) * stepX, fY - cardH/2, "None", null, true, "CHAMP");
+        const fY = last.el.offsetTop - topPadding + cardH/2;
+        createMatch((round + 1) * stepX, fY - cardH/2, "None", null, true, "CHAMP");
         drawLine(last.x + cardW, fY, stepX - cardW, 2);
         matchData[last.mid].next = "CHAMP";
         
-        wrapper.style.width = ((round + 2) * stepX + 100) + "px";
+        wrapper.style.width = ((round + 2) * stepX + sidePadding * 2) + "px";
     }
 
     init();
