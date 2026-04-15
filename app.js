@@ -1,16 +1,12 @@
+// app.js
 const tg = window.Telegram.WebApp;
 tg.expand();
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Список участников (теперь здесь удобно менять)
-    let players = [
-        "ShadowFox", "NeonBlade", "ZeroPulse", "DarkSniper", 
-        "GhostRider", "IronClaw", "NightWolf", "StormBreaker", 
-        "CyberKnight", "PhantomX", "Vortex", "BlazeStorm", 
-        "SilentEdge", "ToxicRush", "CrimsonKing"
-    ];
+    // Берём список из players.js
+    let players = [...TOURNAMENT_PLAYERS];
 
-    // Перемешка
+    // Перемешивание списка
     for (let i = players.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [players[i], players[j]] = [players[j], players[i]];
@@ -33,7 +29,6 @@ document.addEventListener("DOMContentLoaded", () => {
         el.style.left = x + "px";
         el.style.top = y + "px";
         el.dataset.matchId = matchId;
-        if(isChampion) el.dataset.isChamp = "true";
 
         if (isChampion) {
             el.innerHTML = `
@@ -49,14 +44,16 @@ document.addEventListener("DOMContentLoaded", () => {
             `;
         }
 
-        el.onclick = () => openTelegramPopup(matchId);
+        // На чемпиона нажать нельзя
+        if (matchId !== "CHAMP") {
+            el.onclick = () => openTelegramPopup(matchId);
+        }
+        
         wrapper.appendChild(el);
         return el;
     }
 
     function openTelegramPopup(id) {
-        if (id === "CHAMP") return;
-
         const p1 = document.getElementById(id + "-0").innerText;
         const p2 = document.getElementById(id + "-1")?.innerText;
 
@@ -69,7 +66,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         tg.showPopup({
             title: 'Результат матча',
-            message: 'Кто одержал победу?',
+            message: 'Кто проходит дальше?',
             buttons: buttons
         }, (buttonId) => {
             if (buttonId === "p1") setWinner(id, p1);
@@ -82,17 +79,20 @@ document.addEventListener("DOMContentLoaded", () => {
         const p1El = document.getElementById(matchId + "-0");
         const p2El = document.getElementById(matchId + "-1");
 
-        if (p1El && matchId !== "CHAMP") p1El.style.color = (p1El.innerText === name) ? "#44ff44" : "#ff4444";
-        if (p2El && matchId !== "CHAMP") p2El.style.color = (p2El.innerText === name) ? "#44ff44" : "#ff4444";
+        // Подсветка победителя/проигравшего
+        if (p1El) p1El.style.color = (p1El.innerText === name) ? "#44ff44" : "#ff4444";
+        if (p2El) p2El.style.color = (p2El.innerText === name) ? "#44ff44" : "#ff4444";
 
         if (m.nextMatchId) {
             const target = document.getElementById(m.nextMatchId + "-" + m.nextSlot);
             target.innerText = name;
             
+            // Если это блок чемпиона — делаем золотым
             if (m.nextMatchId === "CHAMP") {
                 target.classList.add("champion-text");
             }
 
+            // Авто-проход для нечетных матчей (но не чемпиона)
             const nextMatchEl = document.querySelector(`[data-match-id="${m.nextMatchId}"]`);
             if (nextMatchEl && nextMatchEl.querySelectorAll('.row').length === 1 && m.nextMatchId !== "CHAMP") {
                 setWinner(m.nextMatchId, name);
@@ -122,6 +122,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let round = 0;
         let current = [];
 
+        // Раунд 1
         for (let i = 0; i < list.length; i += 2) {
             const a = list[i];
             const b = list[i+1] || null;
@@ -166,6 +167,7 @@ document.addEventListener("DOMContentLoaded", () => {
             round++;
         }
 
+        // Финальный блок чемпиона
         if (current.length === 1) {
             const A = current[0];
             const mid = "CHAMP";
