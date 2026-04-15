@@ -1,196 +1,163 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// Настройка системной кнопки Telegram (вверху справа)
 tg.SettingsButton.show();
 tg.SettingsButton.onClick(() => {
-    tg.showConfirm("Вы уверены, что хотите сбросить прогресс и перемешать игроков?", (isConfirmed) => {
-        if (isConfirmed) {
-            localStorage.removeItem("tournament_bracket_state");
-            location.reload();
-        }
+    tg.showConfirm("Сбросить сетку?", (ok) => {
+        if (ok) { localStorage.removeItem("tournament_state"); location.reload(); }
     });
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-    const STORAGE_KEY = "tournament_bracket_state";
     const wrapper = document.getElementById("wrapper");
+    const STORAGE_KEY = "tournament_state";
     
-    // Динамический расчет доступного пространства
-    // Запас 40px, чтобы нижние блоки не прилипали к краю
-    const availableHeight = wrapper.offsetHeight - 40; 
-    const stepX = 260;
-    const cardW = 200;
-    const lineHalf = 1;
-    const offset = 0;
-
-    let matchData = {}; 
+    // Настройки размеров
+    const cardW = 180;
+    const cardH = 84; // Примерная высота карточки с 2 строками
+    const stepX = 240; 
+    
+    let matchData = {};
     let players = [];
 
-    // Загрузка состояния
-    const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (savedData) {
-        players = savedData.players;
+    // Загрузка или инициализация
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (saved) {
+        players = saved.players;
     } else {
         players = [...TOURNAMENT_PLAYERS];
-        for (let i = players.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [players[i], players[j]] = [players[j], players[i]];
-        }
+        players.sort(() => Math.random() - 0.5);
     }
 
-    // Рассчитываем вертикальный шаг, чтобы все влезло в экран
+    // Рассчитываем динамический stepY, но не меньше высоты карточки + отступ
+    const availableHeight = wrapper.offsetHeight;
     const firstRoundMatches = Math.ceil(players.length / 2);
-    const stepY = availableHeight / firstRoundMatches;
+    const stepY = Math.max(cardH + 20, availableHeight / firstRoundMatches);
 
-    function saveState() {
-        const state = {};
-        document.querySelectorAll('.row[id]').forEach(row => {
-            state[row.id] = {
-                text: row.innerText,
-                color: row.style.color,
-                isChamp: row.classList.contains('champion-text')
-            };
+    function save() {
+        const cells = {};
+        document.querySelectorAll('.row[id]').forEach(el => {
+            cells[el.id] = { text: el.innerText, color: el.style.color, isChamp: el.classList.contains('champion-text') };
         });
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ players, cells: state }));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ players, cells }));
     }
 
-    function getCenterY(el) { return el.offsetTop + el.offsetHeight / 2; }
-
-    function createMatch(x, y, aName, bName, isChampion=false, matchId) {
+    function createMatch(x, y, p1, p2, isChamp, mid) {
         const el = document.createElement("div");
         el.className = "glass-card";
         el.style.left = x + "px";
         el.style.top = y + "px";
-        el.dataset.matchId = matchId;
-
-        let contentA = aName, contentB = bName, styleA = "", styleB = "", classA = "";
-
-        if (savedData && savedData.cells) {
-            const sA = savedData.cells[`${matchId}-0`];
-            const sB = savedData.cells[`${matchId}-1`];
-            if (sA) { contentA = sA.text; styleA = `style="color:${sA.color}"`; if (sA.isChamp) classA = "champion-text"; }
-            if (sB) { contentB = sB.text; styleB = `style="color:${sB.color}"`; }
+        
+        let s1 = "", s2 = "", c1 = p1, c2 = p2, classChamp = "";
+        if (saved && saved.cells) {
+            const d1 = saved.cells[mid + "-0"];
+            const d2 = saved.cells[mid + "-1"];
+            if (d1) { c1 = d1.text; s1 = `style="color:${d1.color}"`; if (d1.isChamp) classChamp = "champion-text"; }
+            if (d2) { c2 = d2.text; s2 = `style="color:${d2.color}"`; }
         }
 
-        if (isChampion) {
-            el.innerHTML = `<div class="row" style="font-size:10px; opacity:0.5;">ЧЕМПИОН</div>
-                            <div class="row ${classA}" id="${matchId}-0" ${styleA}>${contentA}</div>`;
+        if (isChamp) {
+            el.innerHTML = `<div class="row" style="opacity:0.5;font-size:10px">ЧЕМПИОН</div><div class="row ${classChamp}" id="${mid}-0" ${s1}>${c1}</div>`;
         } else {
-            const rowB = (bName === null) ? "" : `<div class="row" id="${matchId}-1" ${styleB}>${contentB}</div>`;
-            el.innerHTML = `<div class="row" id="${matchId}-0" ${styleA}>${contentA}</div>${rowB}`;
+            el.innerHTML = `<div class="row" id="${mid}-0" ${s1}>${c1}</div><div class="row" id="${mid}-1" ${s2}>${c2 || ""}</div>`;
+            el.onclick = () => {
+                const b = [];
+                if (c1 && c1 !== "None") b.push({id:"1", type:"default", text:c1});
+                if (c2 && c2 !== "None") b.push({id:"2", type:"default", text:c2});
+                b.push({type:"cancel"});
+                tg.showPopup({title:"Победитель", message:"Кто прошел дальше?", buttons:b}, (btn) => {
+                    if (btn === "1") setWinner(mid, c1);
+                    if (btn === "2") setWinner(mid, c2);
+                });
+            };
         }
-
-        if (matchId !== "CHAMP") el.onclick = () => openPopup(matchId);
         wrapper.appendChild(el);
         return el;
     }
 
-    function openPopup(id) {
-        const p1 = document.getElementById(id + "-0").innerText;
-        const p2 = document.getElementById(id + "-1")?.innerText;
-        if (p1 === "None" && (!p2 || p2 === "None")) return;
+    function setWinner(mid, name) {
+        const r1 = document.getElementById(mid + "-0");
+        const r2 = document.getElementById(mid + "-1");
+        if (r1) r1.style.color = r1.innerText === name ? "#44ff44" : "#ff4444";
+        if (r2) r2.style.color = r2.innerText === name ? "#44ff44" : "#ff4444";
 
-        const buttons = [];
-        if (p1 && p1 !== "None") buttons.push({id: "p1", type: "default", text: p1});
-        if (p2 && p2 !== "None") buttons.push({id: "p2", type: "default", text: p2});
-        buttons.push({type: "cancel"});
-
-        tg.showPopup({ title: 'Победитель', message: 'Кто проходит дальше?', buttons }, (btnId) => {
-            if (btnId === "p1") setWinner(id, p1);
-            if (btnId === "p2") setWinner(id, p2);
-        });
-    }
-
-    function setWinner(matchId, name) {
-        const m = matchData[matchId];
-        const p1El = document.getElementById(matchId + "-0");
-        const p2El = document.getElementById(matchId + "-1");
-
-        if (p1El) p1El.style.color = (p1El.innerText === name) ? "#44ff44" : "#ff4444";
-        if (p2El) p2El.style.color = (p2El.innerText === name) ? "#44ff44" : "#ff4444";
-
-        if (m.nextMatchId) {
-            const target = document.getElementById(m.nextMatchId + "-" + m.nextSlot);
-            target.innerText = name;
-            if (m.nextMatchId === "CHAMP") target.classList.add("champion-text");
-
-            const nextMatchEl = document.querySelector(`[data-match-id="${m.nextMatchId}"]`);
-            if (nextMatchEl && nextMatchEl.querySelectorAll('.row').length === 1 && m.nextMatchId !== "CHAMP") {
-                setWinner(m.nextMatchId, name);
+        const m = matchData[mid];
+        if (m && m.next) {
+            const nextEl = document.getElementById(m.next + "-" + m.slot);
+            if (nextEl) {
+                nextEl.innerText = name;
+                if (m.next === "CHAMP") nextEl.classList.add("champion-text");
+                save();
+                // Авто-проход если матч из 1 игрока
+                const parentMatch = document.querySelector(`[data-id="${m.next}"]`);
+                if (m.next !== "CHAMP" && !document.getElementById(m.next + "-1")) {
+                    setWinner(m.next, name);
+                }
             }
         }
-        saveState();
     }
 
-    function drawH(x, y, w) {
+    function drawLine(x, y, w, h) {
         const l = document.createElement("div");
-        l.className = "line h-line";
-        l.style.left = x + "px"; l.style.top = (y - lineHalf) + "px";
-        l.style.width = w + "px"; wrapper.appendChild(l);
+        l.className = "line";
+        l.style.left = x + "px"; l.style.top = y + "px";
+        l.style.width = w + "px"; l.style.height = h + "px";
+        wrapper.appendChild(l);
     }
 
-    function drawV(x, y, h) {
-        const l = document.createElement("div");
-        l.className = "line v-line";
-        l.style.left = (x - lineHalf) + "px"; l.style.top = y + "px";
-        l.style.height = h + "px"; wrapper.appendChild(l);
-    }
-
-    function run(list) {
+    function init() {
         let round = 0;
         let current = [];
 
         // Раунд 1
-        for (let i = 0; i < list.length; i += 2) {
-            const a = list[i], b = list[i+1] || null;
-            const mid = `r${round}m${i}`;
-            const yPos = (i/2) * stepY + (stepY/2 - 35); // Центрируем карточку в слоте
-            const el = createMatch(offset, yPos, a, b, false, mid);
-            matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
-            current.push({ el, x: offset, mid });
-            if (b === null && !savedData) setTimeout(() => setWinner(mid, a), 50);
+        for (let i = 0; i < players.length; i += 2) {
+            const mid = `r0m${i}`;
+            const y = (i/2) * stepY + (stepY/2 - cardH/2);
+            const el = createMatch(0, y, players[i], players[i+1], false, mid);
+            current.push({ el, mid, x: 0 });
+            matchData[mid] = { next: null, slot: 0 };
         }
 
-        round++;
         while (current.length > 1) {
+            round++;
             const next = [];
             for (let i = 0; i < current.length; i += 2) {
-                const A = current[i], B = current[i+1];
                 const mid = `r${round}m${i}`;
-                const el = createMatch(offset + round * stepX, 0, "None", B ? "None" : null, false, mid);
-                matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
+                const a = current[i], b = current[i+1];
+                const yA = a.el.offsetTop + cardH/2;
+                const yB = b ? b.el.offsetTop + cardH/2 : yA;
+                const yM = (yA + yB) / 2;
+                
+                const el = createMatch(round * stepX, yM - cardH/2, "None", b ? "None" : null, false, mid);
+                el.dataset.id = mid;
+                matchData[mid] = { next: null, slot: 0 };
+                
+                // Линии
+                drawLine(a.x + cardW, yA, 30, 2);
+                if (b) {
+                    drawLine(a.x + cardW, yB, 30, 2);
+                    drawLine(a.x + cardW + 30, Math.min(yA, yB), 2, Math.abs(yA - yB));
+                    drawLine(a.x + cardW + 30, yM, stepX - cardW - 30, 2);
+                } else {
+                    drawLine(a.x + cardW, yA, stepX - cardW, 2);
+                }
 
-                const cA = getCenterY(A.el), cB = B ? getCenterY(B.el) : cA;
-                const center = (cA + cB) / 2;
-                el.style.top = (center - el.offsetHeight / 2) + "px";
-
-                const sX = A.x + cardW, mX = sX + 30, eX = offset + round * stepX;
-                drawH(sX, cA, 30);
-                if (B) { drawH(sX, cB, 30); drawV(mX, Math.min(cA, cB), Math.abs(cA - cB)); }
-                drawH(mX, center, eX - mX);
-
-                matchData[A.mid].nextMatchId = mid; matchData[A.mid].nextSlot = 0;
-                if (B) { matchData[B.mid].nextMatchId = mid; matchData[B.mid].nextSlot = 1; }
-                next.push({ el, x: offset + round * stepX, mid });
+                matchData[a.mid].next = mid; matchData[a.mid].slot = 0;
+                if (b) { matchData[b.mid].next = mid; matchData[b.mid].slot = 1; }
+                next.push({ el, mid, x: round * stepX });
             }
             current = next;
-            round++;
         }
 
-        if (current.length === 1) {
-            const A = current[0], mid = "CHAMP";
-            const el = createMatch(offset + round * stepX, 0, "None", null, true, mid);
-            const center = getCenterY(A.el);
-            el.style.top = (center - el.offsetHeight / 2) + "px";
-            drawH(A.x + cardW, center, 60);
-            matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
-            matchData[A.mid].nextMatchId = mid; matchData[A.mid].nextSlot = 0;
-        }
+        // Финал
+        const last = current[0];
+        const fY = last.el.offsetTop + cardH/2;
+        const champ = createMatch((round + 1) * stepX, fY - cardH/2, "None", null, true, "CHAMP");
+        drawLine(last.x + cardW, fY, stepX - cardW, 2);
+        matchData[last.mid].next = "CHAMP";
+        
+        wrapper.style.width = ((round + 2) * stepX + 100) + "px";
     }
 
-    run(players);
-    // Подстройка ширины враппера для скролла
-    const lastCard = wrapper.lastElementChild;
-    if(lastCard) wrapper.style.width = (lastCard.offsetLeft + cardW + 100) + "px";
+    init();
 });
