@@ -3,7 +3,7 @@ tg.expand();
 
 tg.SettingsButton.show();
 tg.SettingsButton.onClick(() => {
-    tg.showConfirm("Сбросить прогресс турнира?", (isConfirmed) => {
+    tg.showConfirm("Вы уверены, что хотите сбросить прогресс турнира?", (isConfirmed) => {
         if (isConfirmed) {
             localStorage.removeItem("tournament_bracket_state");
             location.reload();
@@ -15,20 +15,26 @@ document.addEventListener("DOMContentLoaded", () => {
     const STORAGE_KEY = "tournament_bracket_state";
     const wrapper = document.getElementById("wrapper");
     
-    // --- ГЕОМЕТРИЯ ЭКРАНА ---
-    const vh = window.innerHeight / 100;
-    const paddingT = 2 * vh; // Отступ сверху
-    const paddingB = 2 * vh; // Отступ снизу
-    const availableH = window.innerHeight - paddingT - paddingB;
+    // --- ГЕОМЕТРИЯ ЭКРАНА С УЧЕТОМ SAFE AREA ---
+    // Читаем значения отступов, которые прописал Telegram
+    const style = getComputedStyle(document.documentElement);
+    const safeTop = parseFloat(style.getPropertyValue('--tg-safe-area-inset-top')) || 0;
+    const contentSafeTop = parseFloat(style.getPropertyValue('--tg-content-safe-area-inset-top')) || 0;
+    const totalSafeOffset = safeTop + contentSafeTop;
 
-    const stepX = 260;
-    const cardW = 200;
+    const vh = window.innerHeight / 100;
+    const paddingT = 2 * vh; // 2vh сверху
+    const paddingB = 2 * vh; // 2vh снизу
+    
+    // Доступная высота для сетки (минус безопасная зона и наши отступы)
+    const availableH = window.innerHeight - totalSafeOffset - paddingT - paddingB;
+
+    const stepX = 260; // Расстояние между раундами по горизонтали
+    const cardW = 200; // Ширина карточки
     
     let players = [];
     let matchData = {};
 
-
-    // --- ЛОГИКА ХРАНЕНИЯ ---
     function saveState() {
         const state = {};
         document.querySelectorAll('.row[id]').forEach(row => {
@@ -46,17 +52,17 @@ document.addEventListener("DOMContentLoaded", () => {
     if (savedData) {
         players = savedData.players;
     } else {
-        players = [...TOURNAMENT_PLAYERS];
+        players = [...TOURNAMENT_PLAYERS]; // Массив из players.js
         for (let i = players.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [players[i], players[j]] = [players[j], players[i]];
         }
     }
 
-    // Расчет высоты блоков первого раунда
+    // Расчет высоты карточек и шага
     const matchCountR1 = Math.ceil(players.length / 2);
-    const stepY = availableH / matchCountR1; // Расстояние между центрами слотов
-    const cardH = Math.min(stepY * 0.8, 80); // Высота карточки (не более 80px)
+    const stepY = availableH / matchCountR1; 
+    const cardH = Math.min(stepY * 0.75, 70); // Высота карточки (макс 70px для эстетики)
 
     function getCenterY(el) { return el.offsetTop + el.offsetHeight / 2; }
 
@@ -64,7 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const el = document.createElement("div");
         el.className = "glass-card";
         el.style.left = x + "px";
-        el.style.top = (y - cardH / 2) + "px"; // Центрируем по точке Y
+        el.style.top = (y - cardH / 2) + "px"; // Центрируем по расчетной точке
         el.style.height = cardH + "px";
         el.dataset.matchId = matchId;
 
@@ -98,9 +104,13 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!p2 || p1 === "None" || p2 === "None") return;
 
         tg.showPopup({
-            title: 'Победитель',
-            message: 'Кто проходит дальше?',
-            buttons: [{id: "p1", type: "default", text: p1}, {id: "p2", type: "default", text: p2}, {type: "cancel", text: "Отмена"}]
+            title: 'Результат матча',
+            message: 'Выберите победителя:',
+            buttons: [
+                {id: "p1", type: "default", text: p1}, 
+                {id: "p2", type: "default", text: p2}, 
+                {type: "cancel", text: "Отмена"}
+            ]
         }, (btn) => {
             if (btn === "p1") setWinner(id, p1);
             if (btn === "p2") setWinner(id, p2);
@@ -121,7 +131,6 @@ document.addEventListener("DOMContentLoaded", () => {
             target.style.color = "";
             if (m.nextMatchId === "CHAMP") target.classList.add("champion-text");
             
-            // Если в следующем матче всего 1 слот (финал/бай), пушим победу дальше
             const nextEl = document.querySelector(`[data-match-id="${m.nextMatchId}"]`);
             if (nextEl && nextEl.querySelectorAll('.row').length === 1 && m.nextMatchId !== "CHAMP") {
                 setWinner(m.nextMatchId, name);
@@ -150,7 +159,7 @@ document.addEventListener("DOMContentLoaded", () => {
         for (let i = 0; i < list.length; i += 2) {
             const a = list[i], b = list[i+1] || null;
             const mid = `r0m${i}`;
-            // Центрируем карточку внутри её слота: padding + (номер слота * шаг) + (пол шага)
+            // Центрируем карточку внутри выделенного ей сегмента по высоте
             const yPos = paddingT + (i/2 * stepY) + (stepY / 2);
             const el = createMatch(50, yPos, a, b, false, mid);
             matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
@@ -170,7 +179,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 const el = createMatch(50 + round * stepX, center, "None", B ? "None" : null, false, mid);
                 matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
 
-                // Линии
                 const sX = A.x + cardW, mX = sX + 30, eX = 50 + round * stepX;
                 drawLineH(sX, cA, 30);
                 if (B) { 
@@ -186,7 +194,6 @@ document.addEventListener("DOMContentLoaded", () => {
             current = next; round++;
         }
 
-        // Финальный чемпион
         if (current.length === 1) {
             const A = current[0], mid = "CHAMP", center = getCenterY(A.el);
             const el = createMatch(50 + round * stepX, center, "None", null, true, mid);
@@ -194,9 +201,9 @@ document.addEventListener("DOMContentLoaded", () => {
             matchData[A.mid].nextMatchId = mid; matchData[A.mid].nextSlot = 0;
         }
         
-        // Установка размеров wrapper для скролла
+        // Устанавливаем итоговую высоту контейнера для корректного скролла
         wrapper.style.width = (50 + (round + 1) * stepX) + "px";
-        wrapper.style.height = window.innerHeight + "px";
+        wrapper.style.height = (availableH + paddingT + paddingB) + "px";
     }
 
     run(players);
