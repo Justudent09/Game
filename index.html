@@ -22,12 +22,17 @@
             position: absolute; 
             inset: 0; 
             overflow: auto; 
-            box-sizing: border-box; 
+            display: flex;
+            flex-direction: column;
+            align-items: center; /* Центрируем по горизонтали */
         }
         .wrapper { 
-            margin-top: calc(var(--tg-content-safe-area-inset-top) + var(--tg-safe-area-inset-top));
+            /* Безопасная зона TG + твои 5vw */
+            margin-top: calc(var(--tg-content-safe-area-inset-top, 0px) + var(--tg-safe-area-inset-top, 0px) + 5vw);
             position: relative; 
-            display: inline-block; 
+            display: inline-block;
+            transform-origin: top center; /* Масштаб от верхнего центра */
+            flex-shrink: 0;
         }
 
         .glass-card { 
