@@ -183,7 +183,7 @@ function initTournament() {
 
 // Запуск с микро-задержкой, чтобы дать Telegram пробросить стили
 window.addEventListener('load', () => {
-    setTimeout(initTournament, 100); 
+    setTimeout(initTournament, 1000); 
 });
 
 // Также перезапускаем, если Telegram изменил Safe Area (например, поворот экрана)
