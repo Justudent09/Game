@@ -177,11 +177,29 @@ function initTournament() {
     }
 
     if (current.length === 1) {
-        const A = current[0], mid = "CHAMP", center = getCenterY(A.el);
-        const el = createMatch(50 + round * stepX, center, "None", null, true, mid);
-        drawLine(A.x + cardW, center, 40, 2);
-        matchData[A.mid].nextMatchId = mid; matchData[A.mid].nextSlot = 0;
+        const A = current[0];
+        const mid = "CHAMP";
+        
+        // Сначала создаем блок чемпиона, чтобы он появился в DOM
+        const A_center = getCenterY(A.el);
+        const el = createMatch(50 + round * stepX, A_center, "None", null, true, mid);
+        
+        // Теперь получаем реальный центр уже созданного блока чемпиона
+        const CHAMP_center = getCenterY(el);
+        
+        // Рисуем линию от предыдущего матча к чемпиону
+        // Если центры вдруг не совпали (из-за разной высоты блоков), 
+        // рисуем маленькую вертикальную коррекцию или просто ведем линию к CHAMP_center
+        const sX = A.x + cardW;
+        const eX = 50 + round * stepX;
+        const dist = eX - sX; // Вычисляем точное расстояние до блока
+
+        drawLine(sX, A_center, dist, 2);
+        
+        matchData[A.mid].nextMatchId = mid; 
+        matchData[A.mid].nextSlot = 0;
     }
+
     
     wrapper.style.width = (50 + (round + 1) * stepX) + "px";
     wrapper.style.height = window.innerHeight + "px";
