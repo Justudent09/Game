@@ -1,40 +1,35 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// --- СИСТЕМНАЯ КНОПКА НАСТРОЕК (ДЛЯ СБРОСА) ---
+// Настройка кнопки сброса
 tg.SettingsButton.show();
 tg.SettingsButton.onClick(() => {
-    tg.showConfirm("Вы уверены, что хотите полностью сбросить прогресс турнира?", (isConfirmed) => {
+    tg.showConfirm("Сбросить прогресс турнира?", (isConfirmed) => {
         if (isConfirmed) {
-            // Очищаем локальное хранилище
             localStorage.removeItem("tournament_bracket_state");
-            
-            // Очищаем облако, если оно доступно
-            if (tg.CloudStorage) {
-                tg.CloudStorage.removeItem("tournament_bracket_state", (err, success) => {
-                    tg.showAlert(success ? "Данные в облаке удалены." : "Ошибка удаления из облака.");
-                });
-            }
-            
-            tg.showAlert("Приложение будет перезагружено.", () => {
-                location.reload();
-            });
+            if (tg.CloudStorage) tg.CloudStorage.removeItem("tournament_bracket_state");
+            location.reload();
         }
     });
 });
 
-document.addEventListener("DOMContentLoaded", () => {
+// Основная функция отрисовки, обернутая для вызова после готовности данных
+function initTournament() {
     const STORAGE_KEY = "tournament_bracket_state";
     const wrapper = document.getElementById("wrapper");
+    wrapper.innerHTML = ""; // Очистка при ререндере
 
-    // --- ГЕОМЕТРИЯ С УЧЕТОМ SAFE AREA ---
+    // --- ГЕОМЕТРИЯ С УЧЕТОМ SAFE AREA (ФИКС ДЛЯ REFRESH) ---
     const style = getComputedStyle(document.documentElement);
-    const safeTop = parseFloat(style.getPropertyValue('--tg-safe-area-inset-top')) || 0;
-    const contentSafeTop = parseFloat(style.getPropertyValue('--tg-content-safe-area-inset-top')) || 0;
-    const totalSafeTop = safeTop + contentSafeTop;
     
+    // Пытаемся взять из CSS, если там 0 — берем из объекта tg (если доступен)
+    const safeTop = parseFloat(style.getPropertyValue('--tg-safe-area-inset-top')) || (tg.safeAreaInset ? tg.safeAreaInset.top : 0);
+    const contentSafeTop = parseFloat(style.getPropertyValue('--tg-content-safe-area-inset-top')) || (tg.contentSafeAreaInset ? tg.contentSafeAreaInset.top : 0);
+    
+    const totalSafeTop = safeTop + contentSafeTop;
     const vh = window.innerHeight / 100;
     const padding2vh = 2 * vh;
+
     const startY = totalSafeTop + padding2vh;
     const availableH = window.innerHeight - startY - padding2vh;
 
@@ -43,7 +38,6 @@ document.addEventListener("DOMContentLoaded", () => {
     let players = [];
     let matchData = {};
 
-    // Загрузка
     const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (savedData) {
         players = savedData.players;
@@ -123,16 +117,12 @@ document.addEventListener("DOMContentLoaded", () => {
             }
         }
         
-        // Сохранение в Local и Cloud (если поддерживается)
         const state = {};
         document.querySelectorAll('.row[id]').forEach(row => {
             state[row.id] = { text: row.innerText, color: row.style.color, isChamp: row.classList.contains('champion-text') };
         });
         const finalData = JSON.stringify({ players, cells: state });
         localStorage.setItem(STORAGE_KEY, finalData);
-        if (tg.CloudStorage) {
-            tg.CloudStorage.setItem(STORAGE_KEY, finalData);
-        }
     }
 
     function drawLine(x, y, w, h) {
@@ -144,52 +134,59 @@ document.addEventListener("DOMContentLoaded", () => {
         wrapper.appendChild(l);
     }
 
-    function run(list) {
-        let current = [];
-        for (let i = 0; i < list.length; i += 2) {
-            const mid = `r0m${i}`;
-            const yPos = startY + (i/2 * stepY) + (stepY / 2);
-            const el = createMatch(50, yPos, list[i], list[i+1] || null, false, mid);
-            matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
-            current.push({ el, x: 50, mid });
-            if (!list[i+1] && !savedData) setTimeout(() => setWinner(mid, list[i]), 50);
-        }
-
-        let round = 1;
-        while (current.length > 1) {
-            const next = [];
-            for (let i = 0; i < current.length; i += 2) {
-                const A = current[i], B = current[i+1], mid = `r${round}m${i}`;
-                const cA = getCenterY(A.el), cB = B ? getCenterY(B.el) : cA;
-                const center = (cA + cB) / 2;
-                const el = createMatch(50 + round * stepX, center, "None", B ? "None" : null, false, mid);
-                matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
-                
-                const sX = A.x + cardW, mX = sX + 30, eX = 50 + round * stepX;
-                drawLine(sX, cA, 30, 2);
-                if (B) {
-                    drawLine(sX, cB, 30, 2);
-                    drawLine(mX, Math.min(cA, cB), 2, Math.abs(cA - cB));
-                }
-                drawLine(mX, center, (eX - mX), 2);
-
-                matchData[A.mid].nextMatchId = mid; matchData[A.mid].nextSlot = 0;
-                if (B) { matchData[B.mid].nextMatchId = mid; matchData[B.mid].nextSlot = 1; }
-                next.push({ el, x: 50 + round * stepX, mid });
-            }
-            current = next; round++;
-        }
-
-        if (current.length === 1) {
-            const A = current[0], mid = "CHAMP", center = getCenterY(A.el);
-            const el = createMatch(50 + round * stepX, center, "None", null, true, mid);
-            drawLine(A.x + cardW, center, 40, 2);
-            matchData[A.mid].nextMatchId = mid; matchData[A.mid].nextSlot = 0;
-        }
-        
-        wrapper.style.width = (50 + (round + 1) * stepX) + "px";
-        wrapper.style.height = window.innerHeight + "px";
+    // Отрисовка
+    let current = [];
+    for (let i = 0; i < players.length; i += 2) {
+        const mid = `r0m${i}`;
+        const yPos = startY + (i/2 * stepY) + (stepY / 2);
+        const el = createMatch(50, yPos, players[i], players[i+1] || null, false, mid);
+        matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
+        current.push({ el, x: 50, mid });
+        if (!players[i+1] && !savedData) setTimeout(() => setWinner(mid, players[i]), 50);
     }
 
-    run(players);
+    let round = 1;
+    while (current.length > 1) {
+        const next = [];
+        for (let i = 0; i < current.length; i += 2) {
+            const A = current[i], B = current[i+1], mid = `r${round}m${i}`;
+            const cA = getCenterY(A.el), cB = B ? getCenterY(B.el) : cA;
+            const center = (cA + cB) / 2;
+            const el = createMatch(50 + round * stepX, center, "None", B ? "None" : null, false, mid);
+            matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
+            
+            const sX = A.x + cardW, mX = sX + 30, eX = 50 + round * stepX;
+            drawLine(sX, cA, 30, 2);
+            if (B) {
+                drawLine(sX, cB, 30, 2);
+                drawLine(mX, Math.min(cA, cB), 2, Math.abs(cA - cB));
+            }
+            drawLine(mX, center, (eX - mX), 2);
+
+            matchData[A.mid].nextMatchId = mid; matchData[A.mid].nextSlot = 0;
+            if (B) { matchData[B.mid].nextMatchId = mid; matchData[B.mid].nextSlot = 1; }
+            next.push({ el, x: 50 + round * stepX, mid });
+        }
+        current = next; round++;
+    }
+
+    if (current.length === 1) {
+        const A = current[0], mid = "CHAMP", center = getCenterY(A.el);
+        const el = createMatch(50 + round * stepX, center, "None", null, true, mid);
+        drawLine(A.x + cardW, center, 40, 2);
+        matchData[A.mid].nextMatchId = mid; matchData[A.mid].nextSlot = 0;
+    }
+    
+    wrapper.style.width = (50 + (round + 1) * stepX) + "px";
+    wrapper.style.height = window.innerHeight + "px";
+}
+
+// Запуск с микро-задержкой, чтобы дать Telegram пробросить стили
+window.addEventListener('load', () => {
+    setTimeout(initTournament, 100); 
+});
+
+// Также перезапускаем, если Telegram изменил Safe Area (например, поворот экрана)
+tg.onEvent('viewportChanged', () => {
+    initTournament();
 });
