@@ -29,6 +29,8 @@
             position: relative; 
             display: inline-block; 
             min-width: 100%;
+            /* Безопасная зона через CSS для надежности */
+            margin-top: calc(var(--tg-content-safe-area-inset-top, 0px) + var(--tg-safe-area-inset-top, 0px));
         }
         .glass-card { 
             position: absolute; 
@@ -41,7 +43,6 @@
             overflow: hidden; 
             display: flex;
             flex-direction: column;
-            transition: transform 0.2s;
         }
         .champion-text {
             background: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
@@ -60,11 +61,12 @@
             border-bottom: 1px solid rgba(255,255,255,0.05);
             font-size: 14px;
             white-space: nowrap;
+            text-align: center;
         }
         .row:last-child { border-bottom: none; }
         .line { position: absolute; background: rgba(255,255,255,0.2); pointer-events: none; }
-        .h-line { height: 1px; }
-        .v-line { width: 1px; }
+        .h-line { height: 2px; }
+        .v-line { width: 2px; }
     </style>
 </head>
 <body>
@@ -72,7 +74,6 @@
     <div class="scroll-area">
         <div class="wrapper" id="wrapper"></div>
     </div>
-
     <script src="players.js"></script>
     <script src="app.js"></script>
 </body>
