@@ -1,81 +1,59 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-tg.SettingsButton.show();
-tg.SettingsButton.onClick(() => {
-    tg.showConfirm("Вы уверены, что хотите сбросить прогресс турнира?", (isConfirmed) => {
-        if (isConfirmed) {
-            localStorage.removeItem("tournament_bracket_state");
-            location.reload();
-        }
-    });
-});
-
 document.addEventListener("DOMContentLoaded", () => {
     const STORAGE_KEY = "tournament_bracket_state";
     const wrapper = document.getElementById("wrapper");
-    
-    // --- ГЕОМЕТРИЯ ЭКРАНА С УЧЕТОМ SAFE AREA ---
-    // Читаем значения отступов, которые прописал Telegram
+
+    // 1. ПОЛУЧАЕМ ПАРАМЕТРЫ ОКНА И SAFE AREA
     const style = getComputedStyle(document.documentElement);
-    const safeTop = parseFloat(style.getPropertyValue('--tg-safe-area-inset-top')) || 0;
-    const contentSafeTop = parseFloat(style.getPropertyValue('--tg-content-safe-area-inset-top')) || 0;
-    const totalSafeOffset = safeTop + contentSafeTop;
-
+    // Складываем все системные отступы сверху
+    const safeAreaTop = (parseFloat(style.getPropertyValue('--tg-content-safe-area-inset-top')) || 0) + 
+                       (parseFloat(style.getPropertyValue('--tg-safe-area-inset-top')) || 0);
+    
     const vh = window.innerHeight / 100;
-    const paddingT = 2 * vh; // 2vh сверху
-    const paddingB = 2 * vh; // 2vh снизу
-    
-    // Доступная высота для сетки (минус безопасная зона и наши отступы)
-    const availableH = window.innerHeight - totalSafeOffset - paddingT - paddingB;
+    const padding2vh = 2 * vh;
 
-    const stepX = 260; // Расстояние между раундами по горизонтали
-    const cardW = 200; // Ширина карточки
-    
+    // Итоговый отступ сверху, который нужно ПЕРЕШАГНУТЬ
+    const startY = safeAreaTop + padding2vh;
+    // Доступная чистая высота (отнимаем safeAreaTop и 2vh сверху, и 2vh снизу)
+    const availableH = window.innerHeight - startY - padding2vh;
+
+    const stepX = 260;
+    const cardW = 200;
     let players = [];
     let matchData = {};
 
-    function saveState() {
-        const state = {};
-        document.querySelectorAll('.row[id]').forEach(row => {
-            state[row.id] = {
-                text: row.innerText,
-                color: row.style.color,
-                isChamp: row.classList.contains('champion-text')
-            };
-        });
-        const dataToSave = JSON.stringify({ players, cells: state });
-        localStorage.setItem(STORAGE_KEY, dataToSave);
-    }
-
+    // 2. ДАННЫЕ
     const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (savedData) {
         players = savedData.players;
     } else {
-        players = [...TOURNAMENT_PLAYERS]; // Массив из players.js
+        players = [...TOURNAMENT_PLAYERS];
         for (let i = players.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
             [players[i], players[j]] = [players[j], players[i]];
         }
     }
 
-    // Расчет высоты карточек и шага
+    // 3. РАСЧЕТ ВЕРТИКАЛИ
     const matchCountR1 = Math.ceil(players.length / 2);
-    const stepY = availableH / matchCountR1; 
-    const cardH = Math.min(stepY * 0.75, 70); // Высота карточки (макс 70px для эстетики)
+    // Шаг вычисляется строго из доступного остатка высоты
+    const stepY = availableH / matchCountR1;
+    // Высота карточки адаптируется под плотность сетки
+    const cardH = Math.min(stepY * 0.7, 65); 
 
     function getCenterY(el) { return el.offsetTop + el.offsetHeight / 2; }
 
-    function createMatch(x, y, aName, bName, isChampion=false, matchId) {
+    function createMatch(x, y, aName, bName, isChampion, matchId) {
         const el = document.createElement("div");
         el.className = "glass-card";
         el.style.left = x + "px";
-        el.style.top = (y - cardH / 2) + "px"; // Центрируем по расчетной точке
         el.style.height = cardH + "px";
+        el.style.top = (y - cardH / 2) + "px";
         el.dataset.matchId = matchId;
 
         let contentA = aName, contentB = bName, styleA = "", styleB = "", classA = "";
-
         if (savedData?.cells) {
             const sA = savedData.cells[`${matchId}-0`];
             const sB = savedData.cells[`${matchId}-1`];
@@ -84,44 +62,36 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         if (isChampion) {
-            el.innerHTML = `
-                <div class="row" style="font-size:9px; opacity:0.5; flex:0.4;">ЧЕМПИОН</div>
-                <div class="row ${classA}" id="${matchId}-0" ${styleA}>${contentA}</div>
-            `;
+            el.innerHTML = `<div class="row" style="font-size:9px; opacity:0.5; flex:0.4;">ЧЕМПИОН</div>
+                            <div class="row ${classA}" id="${matchId}-0" ${styleA}>${contentA}</div>`;
         } else {
             const row2 = (bName === null) ? "" : `<div class="row" id="${matchId}-1" ${styleB}>${contentB}</div>`;
             el.innerHTML = `<div class="row" id="${matchId}-0" ${styleA}>${contentA}</div>${row2}`;
         }
 
-        if (matchId !== "CHAMP") el.onclick = () => openPopup(matchId);
+        if (matchId !== "CHAMP") {
+            el.onclick = () => {
+                const p1 = document.getElementById(matchId + "-0")?.innerText;
+                const p2 = document.getElementById(matchId + "-1")?.innerText;
+                if (!p2 || p1 === "None" || p2 === "None") return;
+                tg.showPopup({
+                    title: 'Победитель',
+                    message: 'Кто проходит дальше?',
+                    buttons: [{id:"p1", type:"default", text:p1}, {id:"p2", type:"default", text:p2}, {type:"cancel", text:"Отмена"}]
+                }, (btn) => {
+                    if (btn === "p1") setWinner(matchId, p1);
+                    if (btn === "p2") setWinner(matchId, p2);
+                });
+            };
+        }
         wrapper.appendChild(el);
         return el;
-    }
-
-    function openPopup(id) {
-        const p1 = document.getElementById(id + "-0")?.innerText;
-        const p2 = document.getElementById(id + "-1")?.innerText;
-        if (!p2 || p1 === "None" || p2 === "None") return;
-
-        tg.showPopup({
-            title: 'Результат матча',
-            message: 'Выберите победителя:',
-            buttons: [
-                {id: "p1", type: "default", text: p1}, 
-                {id: "p2", type: "default", text: p2}, 
-                {type: "cancel", text: "Отмена"}
-            ]
-        }, (btn) => {
-            if (btn === "p1") setWinner(id, p1);
-            if (btn === "p2") setWinner(id, p2);
-        });
     }
 
     function setWinner(matchId, name) {
         const m = matchData[matchId];
         const p1El = document.getElementById(matchId + "-0");
         const p2El = document.getElementById(matchId + "-1");
-
         if (p1El) p1El.style.color = (p1El.innerText === name) ? "#44ff44" : "#ff4444";
         if (p2El) p2El.style.color = (p2El.innerText === name) ? "#44ff44" : "#ff4444";
 
@@ -130,62 +100,48 @@ document.addEventListener("DOMContentLoaded", () => {
             target.innerText = name;
             target.style.color = "";
             if (m.nextMatchId === "CHAMP") target.classList.add("champion-text");
-            
             const nextEl = document.querySelector(`[data-match-id="${m.nextMatchId}"]`);
             if (nextEl && nextEl.querySelectorAll('.row').length === 1 && m.nextMatchId !== "CHAMP") {
                 setWinner(m.nextMatchId, name);
             }
         }
-        saveState();
-    }
-
-    function drawLineH(x, y, w) {
-        const l = document.createElement("div");
-        l.className = "line h-line";
-        l.style.left = x + "px"; l.style.top = y + "px";
-        l.style.width = w + "px"; wrapper.appendChild(l);
-    }
-
-    function drawLineV(x, y, h) {
-        const l = document.createElement("div");
-        l.className = "line v-line";
-        l.style.left = x + "px"; l.style.top = y + "px";
-        l.style.height = h + "px"; wrapper.appendChild(l);
+        // Сохранение
+        const state = {};
+        document.querySelectorAll('.row[id]').forEach(row => {
+            state[row.id] = { text: row.innerText, color: row.style.color, isChamp: row.classList.contains('champion-text') };
+        });
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ players, cells: state }));
     }
 
     function run(list) {
         let current = [];
-        // Раунд 1
+        // Первый раунд: Y координата стартует от startY
         for (let i = 0; i < list.length; i += 2) {
-            const a = list[i], b = list[i+1] || null;
             const mid = `r0m${i}`;
-            // Центрируем карточку внутри выделенного ей сегмента по высоте
-            const yPos = paddingT + (i/2 * stepY) + (stepY / 2);
-            const el = createMatch(50, yPos, a, b, false, mid);
+            const yPos = startY + (i/2 * stepY) + (stepY / 2);
+            const el = createMatch(50, yPos, list[i], list[i+1] || null, false, mid);
             matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
             current.push({ el, x: 50, mid });
-            if (b === null && !savedData) setTimeout(() => setWinner(mid, a), 50);
+            if (!list[i+1] && !savedData) setTimeout(() => setWinner(mid, list[i]), 50);
         }
 
         let round = 1;
         while (current.length > 1) {
             const next = [];
             for (let i = 0; i < current.length; i += 2) {
-                const A = current[i], B = current[i+1];
-                const mid = `r${round}m${i}`;
+                const A = current[i], B = current[i+1], mid = `r${round}m${i}`;
                 const cA = getCenterY(A.el), cB = B ? getCenterY(B.el) : cA;
                 const center = (cA + cB) / 2;
-
                 const el = createMatch(50 + round * stepX, center, "None", B ? "None" : null, false, mid);
                 matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
-
+                
                 const sX = A.x + cardW, mX = sX + 30, eX = 50 + round * stepX;
-                drawLineH(sX, cA, 30);
-                if (B) { 
-                    drawLineH(sX, cB, 30); 
-                    drawLineV(mX, Math.min(cA, cB), Math.abs(cA - cB)); 
+                const lh1 = document.createElement("div"); lh1.className="line h-line"; lh1.style.left=sX+"px"; lh1.style.top=cA+"px"; lh1.style.width="30px"; wrapper.appendChild(lh1);
+                if (B) {
+                    const lh2 = document.createElement("div"); lh2.className="line h-line"; lh2.style.left=sX+"px"; lh2.style.top=cB+"px"; lh2.style.width="30px"; wrapper.appendChild(lh2);
+                    const lv = document.createElement("div"); lv.className="line v-line"; lv.style.left=mX+"px"; lv.style.top=Math.min(cA,cB)+"px"; lv.style.height=Math.abs(cA-cB)+"px"; wrapper.appendChild(lv);
                 }
-                drawLineH(mX, center, eX - mX);
+                const lh3 = document.createElement("div"); lh3.className="line h-line"; lh3.style.left=mX+"px"; lh3.style.top=center+"px"; lh3.style.width=(eX-mX)+"px"; wrapper.appendChild(lh3);
 
                 matchData[A.mid].nextMatchId = mid; matchData[A.mid].nextSlot = 0;
                 if (B) { matchData[B.mid].nextMatchId = mid; matchData[B.mid].nextSlot = 1; }
@@ -197,13 +153,12 @@ document.addEventListener("DOMContentLoaded", () => {
         if (current.length === 1) {
             const A = current[0], mid = "CHAMP", center = getCenterY(A.el);
             const el = createMatch(50 + round * stepX, center, "None", null, true, mid);
-            drawLineH(A.x + cardW, center, 40);
+            const lh = document.createElement("div"); lh.className="line h-line"; lh.style.left=(A.x+cardW)+"px"; lh.style.top=center+"px"; lh.style.width="40px"; wrapper.appendChild(lh);
             matchData[A.mid].nextMatchId = mid; matchData[A.mid].nextSlot = 0;
         }
         
-        // Устанавливаем итоговую высоту контейнера для корректного скролла
         wrapper.style.width = (50 + (round + 1) * stepX) + "px";
-        wrapper.style.height = (availableH + paddingT + paddingB) + "px";
+        wrapper.style.height = window.innerHeight + "px";
     }
 
     run(players);
