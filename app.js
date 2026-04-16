@@ -1,18 +1,12 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// Настраиваем системную кнопку настроек
 tg.SettingsButton.show();
 tg.SettingsButton.onClick(() => {
-    tg.showConfirm("Вы уверены, что хотите полностью сбросить прогресс турнира?", (isConfirmed) => {
+    tg.showConfirm("Сбросить прогресс турнира?", (isConfirmed) => {
         if (isConfirmed) {
             localStorage.removeItem("tournament_bracket_state");
-            if (tg.CloudStorage) {
-                tg.CloudStorage.removeItem("tournament_bracket_state");
-            }
-            tg.showAlert("Данные удалены. Приложение будет перезагружено.", () => {
-                location.reload();
-            });
+            location.reload();
         }
     });
 });
@@ -20,17 +14,20 @@ tg.SettingsButton.onClick(() => {
 document.addEventListener("DOMContentLoaded", () => {
     const STORAGE_KEY = "tournament_bracket_state";
     const wrapper = document.getElementById("wrapper");
-    const stepX = 260;
-    const stepY = 50;
-    const cardW = 200;
-    const lineHalf = 1;
-    const offset = 0;
+    
+    // --- ГЕОМЕТРИЯ ЭКРАНА ---
+    const vh = window.innerHeight / 100;
+    const paddingT = 2 * vh; // Отступ сверху
+    const paddingB = 2 * vh; // Отступ снизу
+    const availableH = window.innerHeight - paddingT - paddingB;
 
-    let matchData = {}; 
+    const stepX = 260;
+    const cardW = 200;
+    
     let players = [];
+    let matchData = {};
 
     // --- ЛОГИКА ХРАНЕНИЯ ---
-
     function saveState() {
         const state = {};
         document.querySelectorAll('.row[id]').forEach(row => {
@@ -40,31 +37,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 isChamp: row.classList.contains('champion-text')
             };
         });
-        const dataToSave = JSON.stringify({
-            players: players,
-            cells: state
-        });
-
+        const dataToSave = JSON.stringify({ players, cells: state });
         localStorage.setItem(STORAGE_KEY, dataToSave);
-        if (tg.CloudStorage) {
-            tg.CloudStorage.setItem(STORAGE_KEY, dataToSave);
-        }
     }
 
-    function loadState() {
-        const saved = localStorage.getItem(STORAGE_KEY);
-        if (!saved) return null;
-        return JSON.parse(saved);
-    }
-
-    // --- ИНИЦИАЛИЗАЦИЯ ДАННЫХ ---
-
-    const savedData = loadState();
-
+    const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (savedData) {
         players = savedData.players;
     } else {
-        // TOURNAMENT_PLAYERS берется из players.js
         players = [...TOURNAMENT_PLAYERS];
         for (let i = players.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -72,7 +52,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // --- ОТРИСОВКА ---
+    // Расчет высоты блоков первого раунда
+    const matchCountR1 = Math.ceil(players.length / 2);
+    const stepY = availableH / matchCountR1; // Расстояние между центрами слотов
+    const cardH = Math.min(stepY * 0.8, 80); // Высота карточки (не более 80px)
 
     function getCenterY(el) { return el.offsetTop + el.offsetHeight / 2; }
 
@@ -80,32 +63,22 @@ document.addEventListener("DOMContentLoaded", () => {
         const el = document.createElement("div");
         el.className = "glass-card";
         el.style.left = x + "px";
-        el.style.top = y + "px";
+        el.style.top = (y - cardH / 2) + "px"; // Центрируем по точке Y
+        el.style.height = cardH + "px";
         el.dataset.matchId = matchId;
 
-        let contentA = aName;
-        let contentB = bName;
-        let styleA = "";
-        let styleB = "";
-        let classA = "";
+        let contentA = aName, contentB = bName, styleA = "", styleB = "", classA = "";
 
-        if (savedData && savedData.cells) {
+        if (savedData?.cells) {
             const sA = savedData.cells[`${matchId}-0`];
             const sB = savedData.cells[`${matchId}-1`];
-            if (sA) {
-                contentA = sA.text;
-                styleA = `style="color: ${sA.color}"`;
-                if (sA.isChamp) classA = "champion-text";
-            }
-            if (sB) {
-                contentB = sB.text;
-                styleB = `style="color: ${sB.color}"`;
-            }
+            if (sA) { contentA = sA.text; styleA = `style="color: ${sA.color}"`; if (sA.isChamp) classA = "champion-text"; }
+            if (sB) { contentB = sB.text; styleB = `style="color: ${sB.color}"`; }
         }
 
         if (isChampion) {
             el.innerHTML = `
-                <div class="row" style="font-size:10px; opacity:0.5;">ЧЕМПИОН</div>
+                <div class="row" style="font-size:9px; opacity:0.5; flex:0.4;">ЧЕМПИОН</div>
                 <div class="row ${classA}" id="${matchId}-0" ${styleA}>${contentA}</div>
             `;
         } else {
@@ -113,43 +86,23 @@ document.addEventListener("DOMContentLoaded", () => {
             el.innerHTML = `<div class="row" id="${matchId}-0" ${styleA}>${contentA}</div>${row2}`;
         }
 
-        if (matchId !== "CHAMP") {
-            el.onclick = () => openTelegramPopup(matchId);
-        }
-
+        if (matchId !== "CHAMP") el.onclick = () => openPopup(matchId);
         wrapper.appendChild(el);
         return el;
     }
 
-    function openTelegramPopup(id) {
-        const p1El = document.getElementById(id + "-0");
-        const p2El = document.getElementById(id + "-1");
-        
-        const p1 = p1El ? p1El.innerText : "None";
-        const p2 = p2El ? p2El.innerText : "None";
-
-        // 1. Если второго участника нет (технический проход в 1 раунде) - ничего не делаем
-        if (!p2El) return;
-
-        // 2. Если хотя бы один из участников "None", значит матч еще не готов
-        if (p1 === "None" || p2 === "None") {
-            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
-            return;
-        }
-
-        const buttons = [
-            {id: "p1", type: "default", text: p1},
-            {id: "p2", type: "default", text: p2},
-            {type: "cancel", text: "Отмена"}
-        ];
+    function openPopup(id) {
+        const p1 = document.getElementById(id + "-0")?.innerText;
+        const p2 = document.getElementById(id + "-1")?.innerText;
+        if (!p2 || p1 === "None" || p2 === "None") return;
 
         tg.showPopup({
-            title: 'Результат матча',
-            message: `Кто одержал победу и проходит дальше?`,
-            buttons: buttons
-        }, (buttonId) => {
-            if (buttonId === "p1") setWinner(id, p1);
-            if (buttonId === "p2") setWinner(id, p2);
+            title: 'Победитель',
+            message: 'Кто проходит дальше?',
+            buttons: [{id: "p1", type: "default", text: p1}, {id: "p2", type: "default", text: p2}, {type: "cancel", text: "Отмена"}]
+        }, (btn) => {
+            if (btn === "p1") setWinner(id, p1);
+            if (btn === "p2") setWinner(id, p2);
         });
     }
 
@@ -164,116 +117,86 @@ document.addEventListener("DOMContentLoaded", () => {
         if (m.nextMatchId) {
             const target = document.getElementById(m.nextMatchId + "-" + m.nextSlot);
             target.innerText = name;
-            target.style.color = ""; // Сбрасываем цвет в следующей ячейке
-
-            if (m.nextMatchId === "CHAMP") {
-                target.classList.add("champion-text");
-                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            }
-
-            // Авто-переход, если в следующей карточке только одно место (финал или бай-раунды)
-            const nextMatchEl = document.querySelector(`[data-match-id="${m.nextMatchId}"]`);
-            if (nextMatchEl && nextMatchEl.querySelectorAll('.row').length === 1 && m.nextMatchId !== "CHAMP") {
+            target.style.color = "";
+            if (m.nextMatchId === "CHAMP") target.classList.add("champion-text");
+            
+            // Если в следующем матче всего 1 слот (финал/бай), пушим победу дальше
+            const nextEl = document.querySelector(`[data-match-id="${m.nextMatchId}"]`);
+            if (nextEl && nextEl.querySelectorAll('.row').length === 1 && m.nextMatchId !== "CHAMP") {
                 setWinner(m.nextMatchId, name);
             }
         }
         saveState();
     }
 
-    function drawH(x, y, w) {
+    function drawLineH(x, y, w) {
         const l = document.createElement("div");
         l.className = "line h-line";
-        l.style.left = x + "px"; l.style.top = (y - lineHalf) + "px";
+        l.style.left = x + "px"; l.style.top = y + "px";
         l.style.width = w + "px"; wrapper.appendChild(l);
     }
 
-    function drawV(x, y, h) {
+    function drawLineV(x, y, h) {
         const l = document.createElement("div");
         l.className = "line v-line";
-        l.style.left = (x - lineHalf) + "px"; l.style.top = y + "px";
+        l.style.left = x + "px"; l.style.top = y + "px";
         l.style.height = h + "px"; wrapper.appendChild(l);
     }
 
     function run(list) {
-        let round = 0;
         let current = [];
-
-        // Первый раунд
+        // Раунд 1
         for (let i = 0; i < list.length; i += 2) {
-            const a = list[i];
-            const b = list[i+1] || null;
-            const mid = `r${round}m${i}`;
-            const el = createMatch(offset, i * stepY, a, b, false, mid);
+            const a = list[i], b = list[i+1] || null;
+            const mid = `r0m${i}`;
+            // Центрируем карточку внутри её слота: padding + (номер слота * шаг) + (пол шага)
+            const yPos = paddingT + (i/2 * stepY) + (stepY / 2);
+            const el = createMatch(50, yPos, a, b, false, mid);
             matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
-            current.push({ el, x: offset, mid });
-            
-            // Если оппонента нет, игрок сразу побеждает
-            if (b === null && !savedData) {
-                setTimeout(() => setWinner(mid, a), 50);
-            }
+            current.push({ el, x: 50, mid });
+            if (b === null && !savedData) setTimeout(() => setWinner(mid, a), 50);
         }
 
-        round++;
+        let round = 1;
         while (current.length > 1) {
             const next = [];
             for (let i = 0; i < current.length; i += 2) {
-                const A = current[i]; const B = current[i + 1];
+                const A = current[i], B = current[i+1];
                 const mid = `r${round}m${i}`;
-                const el = createMatch(offset + round * stepX, 0, "None", B ? "None" : null, false, mid);
-                matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
-                
-                const cA = getCenterY(A.el); 
-                const cB = B ? getCenterY(B.el) : cA;
+                const cA = getCenterY(A.el), cB = B ? getCenterY(B.el) : cA;
                 const center = (cA + cB) / 2;
-                
-                el.style.top = (center - el.offsetHeight / 2) + "px";
-                
-                const sX = A.x + cardW; const mX = sX + 30; const eX = offset + round * stepX;
-                drawH(sX, cA, 30);
+
+                const el = createMatch(50 + round * stepX, center, "None", B ? "None" : null, false, mid);
+                matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
+
+                // Линии
+                const sX = A.x + cardW, mX = sX + 30, eX = 50 + round * stepX;
+                drawLineH(sX, cA, 30);
                 if (B) { 
-                    drawH(sX, cB, 30); 
-                    drawV(mX, Math.min(cA, cB), Math.abs(cA - cB)); 
+                    drawLineH(sX, cB, 30); 
+                    drawLineV(mX, Math.min(cA, cB), Math.abs(cA - cB)); 
                 }
-                drawH(mX, center, eX - mX);
-                
+                drawLineH(mX, center, eX - mX);
+
                 matchData[A.mid].nextMatchId = mid; matchData[A.mid].nextSlot = 0;
                 if (B) { matchData[B.mid].nextMatchId = mid; matchData[B.mid].nextSlot = 1; }
-                next.push({ el, x: offset + round * stepX, mid });
+                next.push({ el, x: 50 + round * stepX, mid });
             }
-            current = next;
-            round++;
+            current = next; round++;
         }
 
-        // Карточка чемпиона
+        // Финальный чемпион
         if (current.length === 1) {
-            const A = current[0]; const mid = "CHAMP";
-            const el = createMatch(offset + round * stepX, 0, "None", null, true, mid);
-            const center = getCenterY(A.el);
-            el.style.top = (center - el.offsetHeight / 2) + "px";
-            drawH(A.x + cardW, center, 60);
-            matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
+            const A = current[0], mid = "CHAMP", center = getCenterY(A.el);
+            const el = createMatch(50 + round * stepX, center, "None", null, true, mid);
+            drawLineH(A.x + cardW, center, 40);
             matchData[A.mid].nextMatchId = mid; matchData[A.mid].nextSlot = 0;
         }
-    }
-
-    function updateWrapperSize() {
-        let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
-        const items = document.querySelectorAll(".glass-card, .line");
-        if(items.length === 0) return;
-
-        items.forEach(el => {
-            minX = Math.min(minX, el.offsetLeft); minY = Math.min(minY, el.offsetTop);
-            maxX = Math.max(maxX, el.offsetLeft + el.offsetWidth); maxY = Math.max(maxY, el.offsetTop + el.offsetHeight);
-        });
-        const p = 50;
-        items.forEach(el => {
-            el.style.left = (el.offsetLeft + (p - minX)) + "px";
-            el.style.top = (el.offsetTop + (p - minY)) + "px";
-        });
-        wrapper.style.width = (maxX - minX + p * 2) + "px";
-        wrapper.style.height = (maxY - minY + p * 2) + "px";
+        
+        // Установка размеров wrapper для скролла
+        wrapper.style.width = (50 + (round + 1) * stepX) + "px";
+        wrapper.style.height = window.innerHeight + "px";
     }
 
     run(players);
-    requestAnimationFrame(updateWrapperSize);
 });
