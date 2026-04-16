@@ -29,8 +29,7 @@
             position: relative; 
             display: inline-block; 
             min-width: 100%;
-            /* Безопасная зона через CSS для надежности */
-            margin-top: calc(var(--tg-content-safe-area-inset-top, 0px) + var(--tg-safe-area-inset-top, 0px));
+            /* Убираем margin-top, так как JS теперь сам добавит этот отступ в координаты */
         }
         .glass-card { 
             position: absolute; 
@@ -61,7 +60,6 @@
             border-bottom: 1px solid rgba(255,255,255,0.05);
             font-size: 14px;
             white-space: nowrap;
-            text-align: center;
         }
         .row:last-child { border-bottom: none; }
         .line { position: absolute; background: rgba(255,255,255,0.2); pointer-events: none; }
