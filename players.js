@@ -13,5 +13,7 @@ const TOURNAMENT_PLAYERS = [
     "BlazeStorm", 
     "SilentEdge", 
     "ToxicRush", 
-    "CrimsonKing"
+    "CrimsonKing",
+    "Domura",
+    "Assasin"
 ];
