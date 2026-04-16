@@ -27,6 +27,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let players = [];
     let matchData = {};
 
+
     // --- ЛОГИКА ХРАНЕНИЯ ---
     function saveState() {
         const state = {};
