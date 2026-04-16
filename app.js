@@ -1,11 +1,9 @@
-// app.js
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// Настраиваем системную кнопку настроек (шестеренка вверху)
+// Настраиваем системную кнопку настроек
 tg.SettingsButton.show();
 tg.SettingsButton.onClick(() => {
-    // При нажатии на шестеренку спрашиваем о сбросе
     tg.showConfirm("Вы уверены, что хотите полностью сбросить прогресс турнира?", (isConfirmed) => {
         if (isConfirmed) {
             localStorage.removeItem("tournament_bracket_state");
@@ -48,7 +46,6 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         localStorage.setItem(STORAGE_KEY, dataToSave);
-        // Также дублируем в CloudStorage для надежности
         if (tg.CloudStorage) {
             tg.CloudStorage.setItem(STORAGE_KEY, dataToSave);
         }
@@ -67,6 +64,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (savedData) {
         players = savedData.players;
     } else {
+        // TOURNAMENT_PLAYERS берется из players.js
         players = [...TOURNAMENT_PLAYERS];
         for (let i = players.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
@@ -74,7 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // --- ОТРИСОВКА (ФУНКЦИИ) ---
+    // --- ОТРИСОВКА ---
 
     function getCenterY(el) { return el.offsetTop + el.offsetHeight / 2; }
 
@@ -124,19 +122,30 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     function openTelegramPopup(id) {
-        const p1 = document.getElementById(id + "-0").innerText;
-        const p2 = document.getElementById(id + "-1")?.innerText;
+        const p1El = document.getElementById(id + "-0");
+        const p2El = document.getElementById(id + "-1");
+        
+        const p1 = p1El ? p1El.innerText : "None";
+        const p2 = p2El ? p2El.innerText : "None";
 
-        if (p1 === "None" && (!p2 || p2 === "None")) return;
+        // 1. Если второго участника нет (технический проход в 1 раунде) - ничего не делаем
+        if (!p2El) return;
 
-        const buttons = [];
-        if (p1 && p1 !== "None") buttons.push({id: "p1", type: "default", text: p1});
-        if (p2 && p2 !== "None") buttons.push({id: "p2", type: "default", text: p2});
-        buttons.push({type: "cancel"});
+        // 2. Если хотя бы один из участников "None", значит матч еще не готов
+        if (p1 === "None" || p2 === "None") {
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('warning');
+            return;
+        }
+
+        const buttons = [
+            {id: "p1", type: "default", text: p1},
+            {id: "p2", type: "default", text: p2},
+            {type: "cancel", text: "Отмена"}
+        ];
 
         tg.showPopup({
             title: 'Результат матча',
-            message: 'Кто проходит дальше?',
+            message: `Кто одержал победу и проходит дальше?`,
             buttons: buttons
         }, (buttonId) => {
             if (buttonId === "p1") setWinner(id, p1);
@@ -155,11 +164,14 @@ document.addEventListener("DOMContentLoaded", () => {
         if (m.nextMatchId) {
             const target = document.getElementById(m.nextMatchId + "-" + m.nextSlot);
             target.innerText = name;
+            target.style.color = ""; // Сбрасываем цвет в следующей ячейке
 
             if (m.nextMatchId === "CHAMP") {
                 target.classList.add("champion-text");
+                if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             }
 
+            // Авто-переход, если в следующей карточке только одно место (финал или бай-раунды)
             const nextMatchEl = document.querySelector(`[data-match-id="${m.nextMatchId}"]`);
             if (nextMatchEl && nextMatchEl.querySelectorAll('.row').length === 1 && m.nextMatchId !== "CHAMP") {
                 setWinner(m.nextMatchId, name);
@@ -186,6 +198,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let round = 0;
         let current = [];
 
+        // Первый раунд
         for (let i = 0; i < list.length; i += 2) {
             const a = list[i];
             const b = list[i+1] || null;
@@ -193,7 +206,11 @@ document.addEventListener("DOMContentLoaded", () => {
             const el = createMatch(offset, i * stepY, a, b, false, mid);
             matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
             current.push({ el, x: offset, mid });
-            if (b === null && !savedData) setTimeout(() => setWinner(mid, a), 50);
+            
+            // Если оппонента нет, игрок сразу побеждает
+            if (b === null && !savedData) {
+                setTimeout(() => setWinner(mid, a), 50);
+            }
         }
 
         round++;
@@ -204,13 +221,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 const mid = `r${round}m${i}`;
                 const el = createMatch(offset + round * stepX, 0, "None", B ? "None" : null, false, mid);
                 matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
-                const cA = getCenterY(A.el); const cB = B ? getCenterY(B.el) : cA;
+                
+                const cA = getCenterY(A.el); 
+                const cB = B ? getCenterY(B.el) : cA;
                 const center = (cA + cB) / 2;
+                
                 el.style.top = (center - el.offsetHeight / 2) + "px";
+                
                 const sX = A.x + cardW; const mX = sX + 30; const eX = offset + round * stepX;
                 drawH(sX, cA, 30);
-                if (B) { drawH(sX, cB, 30); drawV(mX, Math.min(cA, cB), Math.abs(cA - cB)); }
+                if (B) { 
+                    drawH(sX, cB, 30); 
+                    drawV(mX, Math.min(cA, cB), Math.abs(cA - cB)); 
+                }
                 drawH(mX, center, eX - mX);
+                
                 matchData[A.mid].nextMatchId = mid; matchData[A.mid].nextSlot = 0;
                 if (B) { matchData[B.mid].nextMatchId = mid; matchData[B.mid].nextSlot = 1; }
                 next.push({ el, x: offset + round * stepX, mid });
@@ -219,6 +244,7 @@ document.addEventListener("DOMContentLoaded", () => {
             round++;
         }
 
+        // Карточка чемпиона
         if (current.length === 1) {
             const A = current[0]; const mid = "CHAMP";
             const el = createMatch(offset + round * stepX, 0, "None", null, true, mid);
@@ -232,12 +258,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function updateWrapperSize() {
         let minX = Infinity, minY = Infinity, maxX = 0, maxY = 0;
-        document.querySelectorAll(".glass-card, .line").forEach(el => {
+        const items = document.querySelectorAll(".glass-card, .line");
+        if(items.length === 0) return;
+
+        items.forEach(el => {
             minX = Math.min(minX, el.offsetLeft); minY = Math.min(minY, el.offsetTop);
             maxX = Math.max(maxX, el.offsetLeft + el.offsetWidth); maxY = Math.max(maxY, el.offsetTop + el.offsetHeight);
         });
         const p = 50;
-        document.querySelectorAll(".glass-card, .line").forEach(el => {
+        items.forEach(el => {
             el.style.left = (el.offsetLeft + (p - minX)) + "px";
             el.style.top = (el.offsetTop + (p - minY)) + "px";
         });
