@@ -8,7 +8,7 @@
     <style>
         body { 
             margin: 0; 
-            font-family: Arial, sans-serif; 
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif; 
             overflow: hidden; 
             color: var(--tg-theme-text-color, white); 
             -webkit-tap-highlight-color: transparent;
@@ -29,7 +29,6 @@
             position: relative; 
             display: inline-block; 
             min-width: 100%;
-            /* Убираем margin-top, так как JS теперь сам добавит этот отступ в координаты */
         }
         .glass-card { 
             position: absolute; 
@@ -42,6 +41,7 @@
             overflow: hidden; 
             display: flex;
             flex-direction: column;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
         }
         .champion-text {
             background: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
@@ -60,6 +60,8 @@
             border-bottom: 1px solid rgba(255,255,255,0.05);
             font-size: 14px;
             white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .row:last-child { border-bottom: none; }
         .line { position: absolute; background: rgba(255,255,255,0.2); pointer-events: none; }
