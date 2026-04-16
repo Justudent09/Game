@@ -1,26 +1,41 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
+// --- СИСТЕМНАЯ КНОПКА НАСТРОЕК (ДЛЯ СБРОСА) ---
+tg.SettingsButton.show();
+tg.SettingsButton.onClick(() => {
+    tg.showConfirm("Вы уверены, что хотите полностью сбросить прогресс турнира?", (isConfirmed) => {
+        if (isConfirmed) {
+            // Очищаем локальное хранилище
+            localStorage.removeItem("tournament_bracket_state");
+            
+            // Очищаем облако, если оно доступно
+            if (tg.CloudStorage) {
+                tg.CloudStorage.removeItem("tournament_bracket_state", (err, success) => {
+                    tg.showAlert(success ? "Данные в облаке удалены." : "Ошибка удаления из облака.");
+                });
+            }
+            
+            tg.showAlert("Приложение будет перезагружено.", () => {
+                location.reload();
+            });
+        }
+    });
+});
+
 document.addEventListener("DOMContentLoaded", () => {
     const STORAGE_KEY = "tournament_bracket_state";
     const wrapper = document.getElementById("wrapper");
 
-    // 1. УЧЕТ SAFE AREA И VH
-    // Считываем значения напрямую из стилей, которые проставляет Telegram
+    // --- ГЕОМЕТРИЯ С УЧЕТОМ SAFE AREA ---
     const style = getComputedStyle(document.documentElement);
     const safeTop = parseFloat(style.getPropertyValue('--tg-safe-area-inset-top')) || 0;
     const contentSafeTop = parseFloat(style.getPropertyValue('--tg-content-safe-area-inset-top')) || 0;
-    
-    // Итоговый системный отступ сверху
     const totalSafeTop = safeTop + contentSafeTop;
     
     const vh = window.innerHeight / 100;
     const padding2vh = 2 * vh;
-
-    // С какой точки по Y мы имеем право рисовать (Safe Area + наши 2vh)
     const startY = totalSafeTop + padding2vh;
-    
-    // Чистая доступная высота окна (вычитаем верхний отступ и 2vh снизу)
     const availableH = window.innerHeight - startY - padding2vh;
 
     const stepX = 260;
@@ -28,6 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let players = [];
     let matchData = {};
 
+    // Загрузка
     const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (savedData) {
         players = savedData.players;
@@ -39,9 +55,8 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // 2. РАСЧЕТ СЕТКИ
     const matchCountR1 = Math.ceil(players.length / 2);
-    const stepY = availableH / matchCountR1; // Делим только доступную область
+    const stepY = availableH / matchCountR1;
     const cardH = Math.min(stepY * 0.75, 70); 
 
     function getCenterY(el) { return el.offsetTop + el.offsetHeight / 2; }
@@ -107,18 +122,23 @@ document.addEventListener("DOMContentLoaded", () => {
                 setWinner(m.nextMatchId, name);
             }
         }
+        
+        // Сохранение в Local и Cloud (если поддерживается)
         const state = {};
         document.querySelectorAll('.row[id]').forEach(row => {
             state[row.id] = { text: row.innerText, color: row.style.color, isChamp: row.classList.contains('champion-text') };
         });
-        localStorage.setItem(STORAGE_KEY, JSON.stringify({ players, cells: state }));
+        const finalData = JSON.stringify({ players, cells: state });
+        localStorage.setItem(STORAGE_KEY, finalData);
+        if (tg.CloudStorage) {
+            tg.CloudStorage.setItem(STORAGE_KEY, finalData);
+        }
     }
 
     function drawLine(x, y, w, h) {
         const l = document.createElement("div");
         l.className = h > 2 ? "line v-line" : "line h-line";
         l.style.left = x + "px";
-        // Центрируем линию: отнимаем 1px (половина толщины 2px)
         l.style.top = h > 2 ? y + "px" : (y - 1) + "px";
         if (h > 2) l.style.height = h + "px"; else l.style.width = w + "px";
         wrapper.appendChild(l);
@@ -126,10 +146,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function run(list) {
         let current = [];
-        // Первый раунд
         for (let i = 0; i < list.length; i += 2) {
             const mid = `r0m${i}`;
-            // Y координата: учитываем startY (Safe + 2vh)
             const yPos = startY + (i/2 * stepY) + (stepY / 2);
             const el = createMatch(50, yPos, list[i], list[i+1] || null, false, mid);
             matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
@@ -169,7 +187,6 @@ document.addEventListener("DOMContentLoaded", () => {
             matchData[A.mid].nextMatchId = mid; matchData[A.mid].nextSlot = 0;
         }
         
-        // Высота враппера равна полной высоте окна, чтобы скролл работал корректно
         wrapper.style.width = (50 + (round + 1) * stepX) + "px";
         wrapper.style.height = window.innerHeight + "px";
     }
