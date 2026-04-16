@@ -7,22 +7,18 @@ tg.SettingsButton.onClick(() => {
     tg.showConfirm("Сбросить прогресс турнира?", (isConfirmed) => {
         if (isConfirmed) {
             localStorage.removeItem("tournament_bracket_state");
-            if (tg.CloudStorage) tg.CloudStorage.removeItem("tournament_bracket_state");
             location.reload();
         }
     });
 });
 
-// Основная функция отрисовки, обернутая для вызова после готовности данных
 function initTournament() {
     const STORAGE_KEY = "tournament_bracket_state";
     const wrapper = document.getElementById("wrapper");
-    wrapper.innerHTML = ""; // Очистка при ререндере
+    wrapper.innerHTML = ""; // Очистка для ререндера
 
-    // --- ГЕОМЕТРИЯ С УЧЕТОМ SAFE AREA (ФИКС ДЛЯ REFRESH) ---
+    // 1. ГЕОМЕТРИЯ (Safe Area + 2vh)
     const style = getComputedStyle(document.documentElement);
-    
-    // Пытаемся взять из CSS, если там 0 — берем из объекта tg (если доступен)
     const safeTop = parseFloat(style.getPropertyValue('--tg-safe-area-inset-top')) || (tg.safeAreaInset ? tg.safeAreaInset.top : 0);
     const contentSafeTop = parseFloat(style.getPropertyValue('--tg-content-safe-area-inset-top')) || (tg.contentSafeAreaInset ? tg.contentSafeAreaInset.top : 0);
     
@@ -38,6 +34,7 @@ function initTournament() {
     let players = [];
     let matchData = {};
 
+    // Загрузка данных
     const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY));
     if (savedData) {
         players = savedData.players;
@@ -49,22 +46,29 @@ function initTournament() {
         }
     }
 
+    // Расчет базовой высоты (для пары)
     const matchCountR1 = Math.ceil(players.length / 2);
     const stepY = availableH / matchCountR1;
-    const cardH = Math.min(stepY * 0.75, 70); 
+    const baseCardH = Math.min(stepY * 0.75, 70); 
 
     function getCenterY(el) { return el.offsetTop + el.offsetHeight / 2; }
 
     function createMatch(x, y, aName, bName, isChampion, matchId) {
         const el = document.createElement("div");
         el.className = "glass-card";
+        
+        // --- УМНЫЙ РАЗМЕР: если нет игрока B, блок в 2 раза меньше ---
+        const isSingle = (bName === null && !isChampion);
+        const currentCardH = isSingle ? baseCardH / 2 : baseCardH;
+        
         el.style.left = x + "px";
-        el.style.height = cardH + "px";
-        el.style.top = (y - cardH / 2) + "px";
+        el.style.height = currentCardH + "px";
+        el.style.top = (y - currentCardH / 2) + "px"; // Центрируем по расчетной точке Y
         el.dataset.matchId = matchId;
 
         let contentA = aName || "None", contentB = bName || "None";
         let styleA = "", styleB = "", classA = "";
+
         if (savedData?.cells) {
             const sA = savedData.cells[`${matchId}-0`];
             const sB = savedData.cells[`${matchId}-1`];
@@ -76,7 +80,7 @@ function initTournament() {
             el.innerHTML = `<div class="row" style="font-size:9px; opacity:0.5; flex:0.4;">ЧЕМПИОН</div>
                             <div class="row ${classA}" id="${matchId}-0" ${styleA}>${contentA}</div>`;
         } else {
-            const row2 = (bName === null) ? "" : `<div class="row" id="${matchId}-1" ${styleB}>${contentB}</div>`;
+            const row2 = isSingle ? "" : `<div class="row" id="${matchId}-1" ${styleB}>${contentB}</div>`;
             el.innerHTML = `<div class="row" id="${matchId}-0" ${styleA}>${contentA}</div>${row2}`;
         }
 
@@ -84,12 +88,13 @@ function initTournament() {
             el.onclick = () => {
                 const p1 = document.getElementById(matchId + "-0")?.innerText;
                 const p2 = document.getElementById(matchId + "-1")?.innerText;
-                if (!p2 || p1 === "None" || p2 === "None") return;
-                tg.showPopup({
-                    title: 'Результат',
-                    message: 'Кто победил?',
-                    buttons: [{id:"p1", type:"default", text:p1}, {id:"p2", type:"default", text:p2}, {type:"cancel", text:"Отмена"}]
-                }, (btn) => {
+                if ((!p2 && !isSingle) || p1 === "None" || (p2 === "None" && !isSingle)) return;
+                
+                const buttons = [{id:"p1", type:"default", text:p1}];
+                if (!isSingle) buttons.push({id:"p2", type:"default", text:p2});
+                buttons.push({type:"cancel", text:"Отмена"});
+
+                tg.showPopup({ title: 'Победитель', message: 'Кто проходит дальше?', buttons }, (btn) => {
                     if (btn === "p1") setWinner(matchId, p1);
                     if (btn === "p2") setWinner(matchId, p2);
                 });
@@ -111,34 +116,35 @@ function initTournament() {
             target.innerText = name;
             target.style.color = "";
             if (m.nextMatchId === "CHAMP") target.classList.add("champion-text");
+            
+            // Авто-проход для бай-матчей в следующих раундах
             const nextEl = document.querySelector(`[data-match-id="${m.nextMatchId}"]`);
             if (nextEl && nextEl.querySelectorAll('.row').length === 1 && m.nextMatchId !== "CHAMP") {
                 setWinner(m.nextMatchId, name);
             }
         }
-        
+        // Save state
         const state = {};
         document.querySelectorAll('.row[id]').forEach(row => {
             state[row.id] = { text: row.innerText, color: row.style.color, isChamp: row.classList.contains('champion-text') };
         });
-        const finalData = JSON.stringify({ players, cells: state });
-        localStorage.setItem(STORAGE_KEY, finalData);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ players, cells: state }));
     }
 
     function drawLine(x, y, w, h) {
         const l = document.createElement("div");
         l.className = h > 2 ? "line v-line" : "line h-line";
         l.style.left = x + "px";
-        l.style.top = h > 2 ? y + "px" : (y - 1) + "px";
+        l.style.top = h > 2 ? y + "px" : (y - 1) + "px"; // Коррекция 1px для идеального центра
         if (h > 2) l.style.height = h + "px"; else l.style.width = w + "px";
         wrapper.appendChild(l);
     }
 
-    // Отрисовка
+    // ОТРИСОВКА
     let current = [];
     for (let i = 0; i < players.length; i += 2) {
         const mid = `r0m${i}`;
-        const yPos = startY + (i/2 * stepY) + (stepY / 2);
+        const yPos = startY + (Math.floor(i/2) * stepY) + (stepY / 2);
         const el = createMatch(50, yPos, players[i], players[i+1] || null, false, mid);
         matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
         current.push({ el, x: 50, mid });
@@ -181,12 +187,11 @@ function initTournament() {
     wrapper.style.height = window.innerHeight + "px";
 }
 
-// Запуск с микро-задержкой, чтобы дать Telegram пробросить стили
+// Запуск с задержкой 1 сек для надежного считывания Safe Area
 window.addEventListener('load', () => {
     setTimeout(initTournament, 1000); 
 });
 
-// Также перезапускаем, если Telegram изменил Safe Area (например, поворот экрана)
 tg.onEvent('viewportChanged', () => {
     initTournament();
 });
