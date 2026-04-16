@@ -6,10 +6,6 @@
     <title>Telegram Bracket</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root {
-            --safe-top: calc(var(--tg-content-safe-area-inset-top, 0px) + var(--tg-safe-area-inset-top, 0px));
-        }
-
         body { 
             margin: 0; 
             font-family: Arial, sans-serif; 
@@ -18,29 +14,22 @@
             -webkit-tap-highlight-color: transparent;
             background: #000;
         }
-
         .bg { 
             position: fixed; 
             inset: 0; 
             background: url('image/f3285d30bff0ae4d484989ed725e356f.jpg') center/cover no-repeat; 
             z-index: -1; 
         }
-
         .scroll-area { 
             position: absolute; 
             inset: 0; 
             overflow: auto; 
-            box-sizing: border-box; 
         }
-
         .wrapper { 
             position: relative; 
             display: inline-block; 
             min-width: 100%;
-            /* Применяем безопасный отступ сверху */
-            margin-top: var(--safe-top);
         }
-
         .glass-card { 
             position: absolute; 
             width: 200px; 
@@ -50,37 +39,29 @@
             border: 1px solid rgba(255,255,255,0.1); 
             border-radius: 12px; 
             overflow: hidden; 
-            cursor: pointer;
             display: flex;
             flex-direction: column;
+            transition: transform 0.2s;
         }
-
         .champion-text {
             background: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             font-weight: bold;
-            font-size: 1.1em;
             filter: drop-shadow(0 0 5px rgba(212, 175, 55, 0.5));
             text-transform: uppercase;
         }
-
         .row { 
             flex: 1;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 0 10px;
-            text-align: center; 
             border-bottom: 1px solid rgba(255,255,255,0.05);
             font-size: 14px;
             white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
         }
-
         .row:last-child { border-bottom: none; }
-
         .line { position: absolute; background: rgba(255,255,255,0.2); pointer-events: none; }
         .h-line { height: 2px; }
         .v-line { width: 2px; }
