@@ -3,70 +3,69 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Telegram Bracket</title>
+    <title>Tournament Bracket Pro</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         body { 
-            margin: 0; 
-            font-family: 'Segoe UI', Roboto, Arial, sans-serif; 
-            overflow: hidden; 
-            color: var(--tg-theme-text-color, white); 
+            margin: 0; font-family: 'Segoe UI', Roboto, Arial, sans-serif; 
+            overflow: hidden; color: white; background: #000;
             -webkit-tap-highlight-color: transparent;
-            background: #000;
         }
         .bg { 
-            position: fixed; 
-            inset: 0; 
+            position: fixed; inset: 0; 
             background: url('image/f3285d30bff0ae4d484989ed725e356f.jpg') center/cover no-repeat; 
-            z-index: -1; 
+            z-index: -1; opacity: 0.5;
         }
-        .scroll-area { 
-            position: absolute; 
-            inset: 0; 
-            overflow: auto; 
-        }
-        .wrapper { 
-            position: relative; 
-            display: inline-block; 
-            min-width: 100%;
-        }
+        .scroll-area { position: absolute; inset: 0; overflow: auto; }
+        .wrapper { position: relative; display: inline-block; min-width: 100%; }
+        
+        /* Карточки */
         .glass-card { 
-            position: absolute; 
-            width: 200px; 
-            backdrop-filter: blur(40px); 
-            -webkit-backdrop-filter: blur(40px); 
-            background: rgba(0,0,0,0.4); 
-            border: 1px solid rgba(255,255,255,0.1); 
-            border-radius: 12px; 
-            overflow: hidden; 
-            display: flex;
-            flex-direction: column;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            position: absolute; width: 200px; 
+            backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); 
+            background: rgba(20, 20, 20, 0.7); 
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; 
+            overflow: hidden; display: flex; flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 10;
+            transition: transform 0.1s;
         }
-        .champion-text {
-            background: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-weight: bold;
-            filter: drop-shadow(0 0 5px rgba(212, 175, 55, 0.5));
-            text-transform: uppercase;
-        }
+        .glass-card:active { transform: scale(0.96); }
+
         .row { 
-            flex: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0 10px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            font-size: 14px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            flex: 1; display: flex; align-items: center; justify-content: center;
+            padding: 0 10px; border-bottom: 1px solid rgba(255,255,255,0.05);
+            font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
         .row:last-child { border-bottom: none; }
-        .line { position: absolute; background: rgba(255,255,255,0.2); pointer-events: none; }
-        .h-line { height: 2px; }
-        .v-line { width: 2px; }
+        
+        .champion-text {
+            background: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            font-weight: bold; filter: drop-shadow(0 0 5px rgba(212, 175, 55, 0.5));
+            text-transform: uppercase;
+        }
+
+        .line { position: absolute; background: rgba(255,255,255,0.2); pointer-events: none; z-index: 1; }
+
+        /* Кастомное модальное окно */
+        #custom-modal {
+            display: none; position: fixed; inset: 0; 
+            background: rgba(0,0,0,0.85); z-index: 9999;
+            align-items: center; justify-content: center; backdrop-filter: blur(10px);
+        }
+        .modal-content {
+            background: #1c1c1e; width: 280px; padding: 20px;
+            border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+            text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+        }
+        .modal-content h3 { margin: 0 0 15px 0; font-size: 17px; }
+        .modal-btn {
+            display: block; width: 100%; padding: 14px; margin-bottom: 8px;
+            background: rgba(255,255,255,0.08); border: none; border-radius: 12px;
+            color: #0A84FF; font-size: 16px; font-weight: 500; cursor: pointer;
+        }
+        .modal-btn:active { background: rgba(255,255,255,0.15); }
+        .modal-btn.cancel { color: #FF453A; margin-top: 10px; background: transparent; }
     </style>
 </head>
 <body>
@@ -74,6 +73,15 @@
     <div class="scroll-area">
         <div class="wrapper" id="wrapper"></div>
     </div>
+
+    <div id="custom-modal">
+        <div class="modal-content">
+            <h3 id="modal-title">Победитель</h3>
+            <div id="modal-buttons-container"></div>
+            <button class="modal-btn cancel" onclick="closeBrowserModal()">Отмена</button>
+        </div>
+    </div>
+
     <script src="players.js"></script>
     <script src="app.js"></script>
 </body>
