@@ -1,4 +1,5 @@
 const TOURNAMENT_PLAYERS = [
+    "the first",
     "incidentSSS",
     "Alihan™",
     "Нурофен?",
