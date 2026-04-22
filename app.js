@@ -15,51 +15,34 @@ tg.SettingsButton.onClick(() => {
 function initTournament() {
     const STORAGE_KEY = "tournament_bracket_state";
     const wrapper = document.getElementById("wrapper");
-    wrapper.innerHTML = ""; // Очистка для ререндера
+    wrapper.innerHTML = ""; 
 
-    // 1. ГЕОМЕТРИЯ (Safe Area + 2vh)
     const style = getComputedStyle(document.documentElement);
     const safeTop = parseFloat(style.getPropertyValue('--tg-safe-area-inset-top')) || (tg.safeAreaInset ? tg.safeAreaInset.top : 0);
     const contentSafeTop = parseFloat(style.getPropertyValue('--tg-content-safe-area-inset-top')) || (tg.contentSafeAreaInset ? tg.contentSafeAreaInset.top : 0);
-    
+
     const totalSafeTop = safeTop + contentSafeTop;
     const vh = window.innerHeight / 100;
     const padding2vh = 2 * vh;
-
     const startY = totalSafeTop + padding2vh;
-    const availableH = window.innerHeight - startY - padding2vh;
 
     const stepX = 260;
     const cardW = 200;
+    const cardH = 64; // Фиксированная высота для точности линий
+    const stepY = 140; // Вертикальный разрыв
+
     let players = [];
     let matchData = {};
 
-    // Загрузка данных
     const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (savedData) {
-        players = savedData.players;
-    } else {
-        players = [...TOURNAMENT_PLAYERS];
-    }
-
-    // Расчет базовой высоты (для пары)
-    const matchCountR1 = Math.ceil(players.length / 2);
-    const stepY = availableH / matchCountR1;
-    const baseCardH = Math.min(stepY * 0.75, 70); 
-
-    function getCenterY(el) { return el.offsetTop + el.offsetHeight / 2; }
+    players = savedData ? savedData.players : [...TOURNAMENT_PLAYERS];
 
     function createMatch(x, y, aName, bName, isChampion, matchId) {
         const el = document.createElement("div");
         el.className = "glass-card";
-        
-        // --- УМНЫЙ РАЗМЕР: если нет игрока B, блок в 2 раза меньше ---
-        const isSingle = (bName === null && !isChampion);
-        const currentCardH = isSingle ? baseCardH / 2 : baseCardH;
-        
         el.style.left = x + "px";
-        el.style.height = currentCardH + "px";
-        el.style.top = (y - currentCardH / 2) + "px"; // Центрируем по расчетной точке Y
+        el.style.height = cardH + "px";
+        el.style.top = (y - cardH / 2) + "px";
         el.dataset.matchId = matchId;
 
         let contentA = aName || "None", contentB = bName || "None";
@@ -76,21 +59,25 @@ function initTournament() {
             el.innerHTML = `<div class="row" style="font-size:9px; opacity:0.5; flex:0.4;">ЧЕМПИОН</div>
                             <div class="row ${classA}" id="${matchId}-0" ${styleA}>${contentA}</div>`;
         } else {
-            const row2 = isSingle ? "" : `<div class="row" id="${matchId}-1" ${styleB}>${contentB}</div>`;
-            el.innerHTML = `<div class="row" id="${matchId}-0" ${styleA}>${contentA}</div>${row2}`;
+            el.innerHTML = `<div class="row" id="${matchId}-0" ${styleA}>${contentA}</div>
+                            <div class="row" id="${matchId}-1" ${styleB}>${contentB}</div>`;
         }
 
         if (matchId !== "CHAMP") {
             el.onclick = () => {
                 const p1 = document.getElementById(matchId + "-0")?.innerText;
                 const p2 = document.getElementById(matchId + "-1")?.innerText;
-                if ((!p2 && !isSingle) || p1 === "None" || (p2 === "None" && !isSingle)) return;
-                
-                const buttons = [{id:"p1", type:"default", text:p1}];
-                if (!isSingle) buttons.push({id:"p2", type:"default", text:p2});
-                buttons.push({type:"cancel", text:"Отмена"});
+                if (p1 === "None" || p2 === "None") return;
 
-                tg.showPopup({ title: 'Победитель', message: 'Кто проходит дальше?', buttons }, (btn) => {
+                tg.showPopup({ 
+                    title: 'Победитель', 
+                    message: 'Кто проходит дальше?', 
+                    buttons: [
+                        {id:"p1", type:"default", text:p1},
+                        {id:"p2", type:"default", text:p2},
+                        {type:"cancel", text:"Отмена"}
+                    ] 
+                }, (btn) => {
                     if (btn === "p1") setWinner(matchId, p1);
                     if (btn === "p2") setWinner(matchId, p2);
                 });
@@ -104,22 +91,19 @@ function initTournament() {
         const m = matchData[matchId];
         const p1El = document.getElementById(matchId + "-0");
         const p2El = document.getElementById(matchId + "-1");
+        
         if (p1El) p1El.style.color = (p1El.innerText === name) ? "#44ff44" : "#ff4444";
         if (p2El) p2El.style.color = (p2El.innerText === name) ? "#44ff44" : "#ff4444";
 
-        if (m.nextMatchId) {
+        if (m && m.nextMatchId) {
             const target = document.getElementById(m.nextMatchId + "-" + m.nextSlot);
-            target.innerText = name;
-            target.style.color = "";
-            if (m.nextMatchId === "CHAMP") target.classList.add("champion-text");
-            
-            // Авто-проход для бай-матчей в следующих раундах
-            const nextEl = document.querySelector(`[data-match-id="${m.nextMatchId}"]`);
-            if (nextEl && nextEl.querySelectorAll('.row').length === 1 && m.nextMatchId !== "CHAMP") {
-                setWinner(m.nextMatchId, name);
+            if (target) {
+                target.innerText = name;
+                target.style.color = "";
+                if (m.nextMatchId === "CHAMP") target.classList.add("champion-text");
             }
         }
-        // Save state
+
         const state = {};
         document.querySelectorAll('.row[id]').forEach(row => {
             state[row.id] = { text: row.innerText, color: row.style.color, isChamp: row.classList.contains('champion-text') };
@@ -127,83 +111,101 @@ function initTournament() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ players, cells: state }));
     }
 
-    function drawLine(x, y, w, h) {
+    function drawStepLine(x1, y1, x2, y2) {
+        const midX = x1 + (x2 - x1) / 2;
+        const createL = (x, y, w, h) => {
+            const l = document.createElement("div");
+            l.className = "line";
+            l.style.left = x + "px"; l.style.top = y + "px";
+            l.style.width = (w || 2) + "px"; l.style.height = (h || 2) + "px";
+            wrapper.appendChild(l);
+        };
+        createL(x1, y1, midX - x1, 2);
+        createL(midX, Math.min(y1, y2), 2, Math.abs(y1 - y2) + 2);
+        createL(midX, y2, x2 - midX, 2);
+    }
+
+    // ЛОГИКА ПОСТРОЕНИЯ
+    const total = players.length;
+    const power = Math.pow(2, Math.floor(Math.log2(total - 0.1)));
+    const numPrelims = total - power;
+    
+    let pIdx = 0;
+    let currentLevel = [];
+    const r0_X = stepX + 50;
+
+    // 1. Построение R0 и Prelims
+    for (let i = 0; i < power / 2; i++) {
+        const mid = `r0m${i}`;
+        matchData[mid] = { nextMatchId: null, nextSlot: 0 };
+        const y = startY + (i * stepY);
+        
+        const p1 = i < numPrelims ? "None" : players[numPrelims * 2 + (pIdx++)];
+        const p2 = players[numPrelims * 2 + (pIdx++)];
+        
+        const el = createMatch(r0_X, y, p1, p2, false, mid);
+        currentLevel.push({ el, id: mid });
+
+        if (i < numPrelims) {
+            const preMid = `pre-${i}`;
+            matchData[preMid] = { nextMatchId: mid, nextSlot: 0 };
+            
+            // Выравнивание: Прелим на одной высоте с родительским матчем
+            const preY = y; 
+            createMatch(50, preY, players[i*2], players[i*2+1], false, preMid);
+            
+            // Линия от центра прелима (y) к верхнему слоту R0 (y - 15px от центра)
+            drawStepLine(50 + cardW, preY, r0_X, y - 16);
+        }
+    }
+
+    // 2. Последующие раунды
+    let round = 1;
+    while (currentLevel.length > 1) {
+        let nextLevel = [];
+        for (let i = 0; i < currentLevel.length; i += 2) {
+            const mid = `r${round}m${i}`;
+            matchData[mid] = { nextMatchId: null, nextSlot: 0 };
+            const m1 = currentLevel[i], m2 = currentLevel[i+1];
+            const y = (m1.el.offsetTop + m1.el.offsetHeight/2 + m2.el.offsetTop + m2.el.offsetHeight/2) / 2;
+            const el = createMatch(r0_X + (stepX * round), y, "None", "None", false, mid);
+            
+            matchData[m1.id].nextMatchId = mid; matchData[m1.id].nextSlot = 0;
+            matchData[m2.id].nextMatchId = mid; matchData[m2.id].nextSlot = 1;
+            
+            drawStepLine(m1.el.offsetLeft + cardW, m1.el.offsetTop + cardH/2, el.offsetLeft, y - 16);
+            drawStepLine(m2.el.offsetLeft + cardW, m2.el.offsetTop + cardH/2, el.offsetLeft, y + 16);
+
+            nextLevel.push({ el, id: mid });
+        }
+        currentLevel = nextLevel;
+        round++;
+    }
+
+    // 3. Чемпион
+    if (currentLevel.length === 1) {
+        const last = currentLevel[0];
+        const mid = "CHAMP";
+        const y = last.el.offsetTop + cardH/2;
+        const el = createMatch(r0_X + (stepX * round), y, "None", null, true, mid);
+        matchData[last.id].nextMatchId = mid;
+        matchData[last.id].nextSlot = 0;
+        
         const l = document.createElement("div");
-        l.className = h > 2 ? "line v-line" : "line h-line";
-        l.style.left = x + "px";
-        l.style.top = h > 2 ? y + "px" : (y - 1) + "px"; // Коррекция 1px для идеального центра
-        if (h > 2) l.style.height = h + "px"; else l.style.width = w + "px";
+        l.className = "line";
+        l.style.left = (last.el.offsetLeft + cardW) + "px";
+        l.style.top = y + "px";
+        l.style.width = (stepX - cardW) + "px";
+        l.style.height = "2px";
         wrapper.appendChild(l);
     }
 
-    // ОТРИСОВКА
-    let current = [];
-    for (let i = 0; i < players.length; i += 2) {
-        const mid = `r0m${i}`;
-        const yPos = startY + (Math.floor(i/2) * stepY) + (stepY / 2);
-        const el = createMatch(50, yPos, players[i], players[i+1] || null, false, mid);
-        matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
-        current.push({ el, x: 50, mid });
-        if (!players[i+1] && !savedData) setTimeout(() => setWinner(mid, players[i]), 50);
-    }
-
-    let round = 1;
-    while (current.length > 1) {
-        const next = [];
-        for (let i = 0; i < current.length; i += 2) {
-            const A = current[i], B = current[i+1], mid = `r${round}m${i}`;
-            const cA = getCenterY(A.el), cB = B ? getCenterY(B.el) : cA;
-            const center = (cA + cB) / 2;
-            const el = createMatch(50 + round * stepX, center, "None", B ? "None" : null, false, mid);
-            matchData[mid] = { el, nextMatchId: null, nextSlot: 0 };
-            
-            const sX = A.x + cardW, mX = sX + 30, eX = 50 + round * stepX;
-            drawLine(sX, cA, 30, 2);
-            if (B) {
-                drawLine(sX, cB, 30, 2);
-                drawLine(mX, Math.min(cA, cB), 2, Math.abs(cA - cB));
-            }
-            drawLine(mX, center, (eX - mX), 2);
-
-            matchData[A.mid].nextMatchId = mid; matchData[A.mid].nextSlot = 0;
-            if (B) { matchData[B.mid].nextMatchId = mid; matchData[B.mid].nextSlot = 1; }
-            next.push({ el, x: 50 + round * stepX, mid });
-        }
-        current = next; round++;
-    }
-
-    if (current.length === 1) {
-        const A = current[0];
-        const mid = "CHAMP";
-        
-        // Сначала создаем блок чемпиона, чтобы он появился в DOM
-        const A_center = getCenterY(A.el);
-        const el = createMatch(50 + round * stepX, A_center, "None", null, true, mid);
-        
-        // Теперь получаем реальный центр уже созданного блока чемпиона
-        const CHAMP_center = getCenterY(el);
-        
-        // Рисуем линию от предыдущего матча к чемпиону
-        // Если центры вдруг не совпали (из-за разной высоты блоков), 
-        // рисуем маленькую вертикальную коррекцию или просто ведем линию к CHAMP_center
-        const sX = A.x + cardW;
-        const eX = 50 + round * stepX;
-        const dist = eX - sX; // Вычисляем точное расстояние до блока
-
-        drawLine(sX, A_center, dist, 2);
-        
-        matchData[A.mid].nextMatchId = mid; 
-        matchData[A.mid].nextSlot = 0;
-    }
-
-    
-    wrapper.style.width = (50 + (round + 1) * stepX) + "px";
-    wrapper.style.height = window.innerHeight + "px";
+    wrapper.style.width = (r0_X + (round + 1) * stepX) + "px";
+    wrapper.style.height = (startY + (power/2) * stepY + 100) + "px";
 }
 
-// Запуск с задержкой 1 сек для надежного считывания Safe Area
 window.addEventListener('load', () => {
-    setTimeout(initTournament, 1000); 
+    setTimeout(initTournament, 200); 
 });
 
 tg.onEvent('viewportChanged', () => {
