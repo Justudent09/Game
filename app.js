@@ -190,7 +190,7 @@ function initTournament() {
             const m1 = currentLevel[i], m2 = currentLevel[i+1];
             const y1 = m1.el.offsetTop + cardH/2, y2 = m2.el.offsetTop + cardH/2;
             const y = (y1 + y2) / 2;
-            const el = createMatch(r0_X + (stepX * round), y, "???", "???", false, mid);
+            const el = createMatch(r0_X + (stepX * round), y, "❓❓❓", "❓❓❓", false, mid);
             matchData[m1.id].nextMatchId = mid; matchData[m1.id].nextSlot = 0;
             matchData[m2.id].nextMatchId = mid; matchData[m2.id].nextSlot = 1;
             drawStepLine(m1.el.offsetLeft + cardW, y1, el.offsetLeft, y - (cardH / 4));
