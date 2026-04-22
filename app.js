@@ -1,20 +1,27 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// Настройка кнопки сброса (Safe-check для браузера)
-if (tg.SettingsButton) {
+// Общая логика сброса
+function triggerReset() {
+    const performReset = () => {
+        localStorage.removeItem("tournament_bracket_state");
+        location.reload();
+    };
+
+    if (window.Telegram && tg.initData !== "" && tg.showConfirm) {
+        tg.showConfirm("Сбросить весь прогресс турнира?", (ok) => { if(ok) performReset(); });
+    } else {
+        if (confirm("Вы уверены, что хотите сбросить прогресс?")) performReset();
+    }
+}
+
+// Показ кнопок сброса в зависимости от среды
+if (window.Telegram && tg.initData !== "" && tg.SettingsButton) {
     tg.SettingsButton.show();
-    tg.SettingsButton.onClick(() => {
-        const resetProgress = () => {
-            localStorage.removeItem("tournament_bracket_state");
-            location.reload();
-        };
-        if (tg.showConfirm) {
-            tg.showConfirm("Сбросить прогресс турнира?", (ok) => { if(ok) resetProgress(); });
-        } else if (confirm("Сбросить прогресс турнира?")) {
-            resetProgress();
-        }
-    });
+    tg.SettingsButton.onClick(triggerReset);
+} else {
+    const btn = document.getElementById('browser-reset-btn');
+    if (btn) btn.style.display = 'block';
 }
 
 function closeBrowserModal() {
@@ -30,7 +37,10 @@ function initTournament() {
     const safeTop = parseFloat(style.getPropertyValue('--tg-safe-area-inset-top')) || (tg.safeAreaInset ? tg.safeAreaInset.top : 0);
     const contentSafeTop = parseFloat(style.getPropertyValue('--tg-content-safe-area-inset-top')) || (tg.contentSafeAreaInset ? tg.contentSafeAreaInset.top : 0);
 
-    const totalSafeTop = safeTop + contentSafeTop;
+    const isBrowser = !(window.Telegram && tg.initData !== "");
+    const topMargin = isBrowser ? 50 : 0; 
+
+    const totalSafeTop = safeTop + contentSafeTop + topMargin;
     const vh = window.innerHeight / 100;
     const startY = totalSafeTop + (4 * vh);
 
@@ -81,9 +91,7 @@ function initTournament() {
                 const p2 = document.getElementById(matchId + "-1")?.innerText;
                 if (p1 === "???" || p2 === "???") return;
 
-                const isTelegram = window.Telegram && tg.initData !== "" && tg.showPopup;
-
-                if (isTelegram) {
+                if (window.Telegram && tg.initData !== "" && tg.showPopup) {
                     tg.showPopup({ 
                         title: 'Победитель', 
                         message: 'Кто проходит дальше?', 
@@ -203,8 +211,8 @@ function initTournament() {
         l.style.top = y + "px"; l.style.width = (stepX - cardW) + "px";
         l.style.height = "2px"; wrapper.appendChild(l);
     }
-    wrapper.style.width = (r0_X + (round + 1) * stepX + 100) + "px";
-    wrapper.style.height = (startY + (power/2) * stepY + 100) + "px";
+    wrapper.style.width = (r0_X + (round + 1) * stepX) + "px";
+    wrapper.style.height = (startY + (power/2) * stepY) + "px";
 }
 
 window.addEventListener('load', () => setTimeout(initTournament, 200));
