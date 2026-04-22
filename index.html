@@ -19,7 +19,16 @@
         .scroll-area { position: absolute; inset: 0; overflow: auto; }
         .wrapper { position: relative; display: inline-block; min-width: 100%; }
         
-        /* Карточки */
+        /* Кнопка сброса для браузера */
+        #browser-reset-btn {
+            display: none; position: fixed; top: 10px; left: 10px; z-index: 1000;
+            padding: 8px 16px; background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 10px;
+            color: white; font-size: 12px; font-weight: 500; cursor: pointer;
+        }
+
+        /* Карточки матчей */
         .glass-card { 
             position: absolute; width: 200px; 
             backdrop-filter: blur(40px); -webkit-backdrop-filter: blur(40px); 
@@ -27,9 +36,8 @@
             border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; 
             overflow: hidden; display: flex; flex-direction: column;
             box-shadow: 0 8px 32px rgba(0,0,0,0.5); z-index: 10;
-            transition: transform 0.1s;
         }
-        .glass-card:active { transform: scale(0.96); }
+        .glass-card:active { transform: scale(0.98); transition: 0.1s; }
 
         .row { 
             flex: 1; display: flex; align-items: center; justify-content: center;
@@ -64,20 +72,20 @@
             background: rgba(255,255,255,0.08); border: none; border-radius: 12px;
             color: #0A84FF; font-size: 16px; font-weight: 500; cursor: pointer;
         }
-        .modal-btn:active { background: rgba(255,255,255,0.15); }
         .modal-btn.cancel { color: #FF453A; margin-top: 10px; background: transparent; }
     </style>
 </head>
 <body>
-
     <div class="bg"></div>
+    <button id="browser-reset-btn" onclick="triggerReset()">Сбросить турнир</button>
+
     <div class="scroll-area">
         <div class="wrapper" id="wrapper"></div>
     </div>
 
     <div id="custom-modal">
         <div class="modal-content">
-            <h3 id="modal-title">Победитель</h3>
+            <h3>Победитель</h3>
             <div id="modal-buttons-container"></div>
             <button class="modal-btn cancel" onclick="closeBrowserModal()">Отмена</button>
         </div>
