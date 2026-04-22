@@ -12,7 +12,9 @@ const TOURNAMENT_PLAYERS = [
     "IDI",
     "FotonX17",
     "Нрнр",
+    "_KING_2.0",
     "Lord",
     "Ramzes faraon",
+    "Azok",
     "_Magatemir11_"
 ];
