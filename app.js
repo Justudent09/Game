@@ -26,10 +26,17 @@ function initTournament() {
     const padding2vh = 2 * vh;
     const startY = totalSafeTop + padding2vh;
 
+    // Расчет параметров сетки
+    const total = TOURNAMENT_PLAYERS.length;
+    const power = Math.pow(2, Math.floor(Math.log2(total - 0.1)));
+    const matchCountR1 = power / 2;
+    
+    const availableH = window.innerHeight - startY - padding2vh;
+    const stepY = Math.max(availableH / matchCountR1, 80); 
+    const cardH = Math.min(stepY * 0.7, 64); 
+
     const stepX = 260;
     const cardW = 200;
-    const cardH = 64; // Фиксированная высота для точности линий
-    const stepY = 140; // Вертикальный разрыв
 
     let players = [];
     let matchData = {};
@@ -125,11 +132,7 @@ function initTournament() {
         createL(midX, y2, x2 - midX, 2);
     }
 
-    // ЛОГИКА ПОСТРОЕНИЯ
-    const total = players.length;
-    const power = Math.pow(2, Math.floor(Math.log2(total - 0.1)));
     const numPrelims = total - power;
-    
     let pIdx = 0;
     let currentLevel = [];
     const r0_X = stepX + 50;
@@ -138,7 +141,7 @@ function initTournament() {
     for (let i = 0; i < power / 2; i++) {
         const mid = `r0m${i}`;
         matchData[mid] = { nextMatchId: null, nextSlot: 0 };
-        const y = startY + (i * stepY);
+        const y = startY + (i * stepY) + (stepY / 2);
         
         const p1 = i < numPrelims ? "???" : players[numPrelims * 2 + (pIdx++)];
         const p2 = players[numPrelims * 2 + (pIdx++)];
@@ -149,13 +152,9 @@ function initTournament() {
         if (i < numPrelims) {
             const preMid = `pre-${i}`;
             matchData[preMid] = { nextMatchId: mid, nextSlot: 0 };
-            
-            // Выравнивание: Прелим на одной высоте с родительским матчем
             const preY = y; 
             createMatch(50, preY, players[i*2], players[i*2+1], false, preMid);
-            
-            // Линия от центра прелима (y) к верхнему слоту R0 (y - 15px от центра)
-            drawStepLine(50 + cardW, preY, r0_X, y - 16);
+            drawStepLine(50 + cardW, preY, r0_X, y - (cardH / 4));
         }
     }
 
@@ -167,14 +166,17 @@ function initTournament() {
             const mid = `r${round}m${i}`;
             matchData[mid] = { nextMatchId: null, nextSlot: 0 };
             const m1 = currentLevel[i], m2 = currentLevel[i+1];
-            const y = (m1.el.offsetTop + m1.el.offsetHeight/2 + m2.el.offsetTop + m2.el.offsetHeight/2) / 2;
+            const y1 = m1.el.offsetTop + cardH/2;
+            const y2 = m2.el.offsetTop + cardH/2;
+            const y = (y1 + y2) / 2;
+            
             const el = createMatch(r0_X + (stepX * round), y, "???", "???", false, mid);
             
             matchData[m1.id].nextMatchId = mid; matchData[m1.id].nextSlot = 0;
             matchData[m2.id].nextMatchId = mid; matchData[m2.id].nextSlot = 1;
             
-            drawStepLine(m1.el.offsetLeft + cardW, m1.el.offsetTop + cardH/2, el.offsetLeft, y - 16);
-            drawStepLine(m2.el.offsetLeft + cardW, m2.el.offsetTop + cardH/2, el.offsetLeft, y + 16);
+            drawStepLine(m1.el.offsetLeft + cardW, y1, el.offsetLeft, y - (cardH / 4));
+            drawStepLine(m2.el.offsetLeft + cardW, y2, el.offsetLeft, y + (cardH / 4));
 
             nextLevel.push({ el, id: mid });
         }
