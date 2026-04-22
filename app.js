@@ -47,6 +47,25 @@ function initTournament() {
     const total = (typeof TOURNAMENT_PLAYERS !== 'undefined') ? TOURNAMENT_PLAYERS.length : 0;
     if (total === 0) return;
 
+    // --- ЛОГИКА РАНДОМА И ЗАГРУЗКИ ---
+    const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    let players;
+
+    if (savedData && savedData.players) {
+        // Если есть сохраненный порядок — используем его
+        players = savedData.players;
+    } else {
+        // Если данных нет — создаем новый рандомный порядок
+        players = [...TOURNAMENT_PLAYERS];
+        for (let i = players.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [players[i], players[j]] = [players[j], players[i]];
+        }
+        // Сразу сохраняем структуру, чтобы рандом не пересчитывался при ресайзе
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ players: players, cells: {} }));
+    }
+    // --------------------------------
+
     const power = Math.pow(2, Math.floor(Math.log2(total - 0.1)));
     const matchCountR1 = power / 2;
     const availableH = window.innerHeight - startY - (4 * vh);
@@ -57,8 +76,6 @@ function initTournament() {
     const cardW = 200;
 
     let matchData = {};
-    const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    const players = savedData ? savedData.players : [...TOURNAMENT_PLAYERS];
 
     function createMatch(x, y, aName, bName, isChampion, matchId) {
         const el = document.createElement("div");
