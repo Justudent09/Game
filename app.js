@@ -67,7 +67,7 @@ function initTournament() {
         el.style.height = cardH + "px";
         el.style.top = (y - cardH / 2) + "px";
 
-        let contentA = aName || "???", contentB = bName || "???";
+        let contentA = aName || "❓❓❓", contentB = bName || "❓❓❓";
         let styleA = "", styleB = "", classA = "";
 
         if (savedData?.cells) {
@@ -89,7 +89,7 @@ function initTournament() {
             el.onclick = () => {
                 const p1 = document.getElementById(matchId + "-0")?.innerText;
                 const p2 = document.getElementById(matchId + "-1")?.innerText;
-                if (p1 === "???" || p2 === "???") return;
+                if (p1 === "❓❓❓" || p2 === "❓❓❓") return;
 
                 if (window.Telegram && tg.initData !== "" && tg.showPopup) {
                     tg.showPopup({ 
@@ -168,7 +168,7 @@ function initTournament() {
         const mid = `r0m${i}`;
         matchData[mid] = { nextMatchId: null, nextSlot: 0 };
         const y = startY + (i * stepY) + (stepY / 2);
-        const p1 = i < numPrelims ? "???" : players[numPrelims * 2 + (pIdx++)];
+        const p1 = i < numPrelims ? "❓❓❓" : players[numPrelims * 2 + (pIdx++)];
         const p2 = players[numPrelims * 2 + (pIdx++)];
         const el = createMatch(r0_X, y, p1, p2, false, mid);
         currentLevel.push({ el, id: mid });
@@ -203,7 +203,7 @@ function initTournament() {
     if (currentLevel.length === 1) {
         const last = currentLevel[0], mid = "CHAMP";
         const y = last.el.offsetTop + cardH/2;
-        createMatch(r0_X + (stepX * round), y, "???", null, true, mid);
+        createMatch(r0_X + (stepX * round), y, "❓❓❓", null, true, mid);
         matchData[last.id].nextMatchId = mid; matchData[last.id].nextSlot = 0;
         const l = document.createElement("div");
         l.className = "line";
