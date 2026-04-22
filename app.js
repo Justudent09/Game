@@ -11,7 +11,7 @@ function triggerReset() {
     if (window.Telegram && tg.initData !== "" && tg.showConfirm) {
         tg.showConfirm("Сбросить весь прогресс турнира?", (ok) => { if(ok) performReset(); });
     } else {
-        if (confirm("Вы уверены, что хотите сбросить прогресс?")) performReset();
+        if (confirm("Создать новую турнирную сетку?")) performReset();
     }
 }
 
