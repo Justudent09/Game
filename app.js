@@ -1,21 +1,24 @@
 const tg = window.Telegram.WebApp;
 tg.expand();
 
-// Настройка кнопки сброса (Проверка на наличие метода для браузера)
+// Настройка кнопки сброса (Safe-check для браузера)
 if (tg.SettingsButton) {
     tg.SettingsButton.show();
     tg.SettingsButton.onClick(() => {
-        const resetAction = () => {
+        const resetProgress = () => {
             localStorage.removeItem("tournament_bracket_state");
             location.reload();
         };
-        
         if (tg.showConfirm) {
-            tg.showConfirm("Сбросить прогресс турнира?", (ok) => { if(ok) resetAction(); });
+            tg.showConfirm("Сбросить прогресс турнира?", (ok) => { if(ok) resetProgress(); });
         } else if (confirm("Сбросить прогресс турнира?")) {
-            resetAction();
+            resetProgress();
         }
     });
+}
+
+function closeBrowserModal() {
+    document.getElementById('custom-modal').style.display = 'none';
 }
 
 function initTournament() {
@@ -23,36 +26,29 @@ function initTournament() {
     const wrapper = document.getElementById("wrapper");
     wrapper.innerHTML = ""; 
 
-    // Расчет отступов Safe Area
     const style = getComputedStyle(document.documentElement);
     const safeTop = parseFloat(style.getPropertyValue('--tg-safe-area-inset-top')) || (tg.safeAreaInset ? tg.safeAreaInset.top : 0);
     const contentSafeTop = parseFloat(style.getPropertyValue('--tg-content-safe-area-inset-top')) || (tg.contentSafeAreaInset ? tg.contentSafeAreaInset.top : 0);
 
     const totalSafeTop = safeTop + contentSafeTop;
     const vh = window.innerHeight / 100;
-    const paddingVal = 4 * vh; // Небольшой отступ сверху/снизу
-    const startY = totalSafeTop + paddingVal;
+    const startY = totalSafeTop + (4 * vh);
 
-    // Параметры игроков и сетки
     const total = (typeof TOURNAMENT_PLAYERS !== 'undefined') ? TOURNAMENT_PLAYERS.length : 0;
     if (total === 0) return;
 
     const power = Math.pow(2, Math.floor(Math.log2(total - 0.1)));
     const matchCountR1 = power / 2;
-    
-    // Динамическое масштабирование по высоте
-    const availableH = window.innerHeight - startY - paddingVal;
+    const availableH = window.innerHeight - startY - (4 * vh);
     const stepY = Math.max(availableH / matchCountR1, 90); 
     const cardH = Math.min(stepY * 0.7, 64); 
 
     const stepX = 260;
     const cardW = 200;
 
-    let players = [];
     let matchData = {};
-
     const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    players = savedData ? savedData.players : [...TOURNAMENT_PLAYERS];
+    const players = savedData ? savedData.players : [...TOURNAMENT_PLAYERS];
 
     function createMatch(x, y, aName, bName, isChampion, matchId) {
         const el = document.createElement("div");
@@ -60,7 +56,6 @@ function initTournament() {
         el.style.left = x + "px";
         el.style.height = cardH + "px";
         el.style.top = (y - cardH / 2) + "px";
-        el.dataset.matchId = matchId;
 
         let contentA = aName || "???", contentB = bName || "???";
         let styleA = "", styleB = "", classA = "";
@@ -86,10 +81,9 @@ function initTournament() {
                 const p2 = document.getElementById(matchId + "-1")?.innerText;
                 if (p1 === "???" || p2 === "???") return;
 
-                // Проверка: мы в Telegram или в браузере?
-                const isTelegram = window.Telegram && tg.initData !== "";
+                const isTelegram = window.Telegram && tg.initData !== "" && tg.showPopup;
 
-                if (isTelegram && tg.showPopup) {
+                if (isTelegram) {
                     tg.showPopup({ 
                         title: 'Победитель', 
                         message: 'Кто проходит дальше?', 
@@ -103,8 +97,17 @@ function initTournament() {
                         if (btn === "p2") setWinner(matchId, p2);
                     });
                 } else {
-                    const win = confirm(`Победил ${p1}?\n\nОК — ${p1}\nОтмена — ${p2}`);
-                    setWinner(matchId, win ? p1 : p2);
+                    const modal = document.getElementById('custom-modal');
+                    const container = document.getElementById('modal-buttons-container');
+                    container.innerHTML = "";
+                    [p1, p2].forEach(name => {
+                        const btn = document.createElement('button');
+                        btn.className = 'modal-btn';
+                        btn.innerText = name;
+                        btn.onclick = () => { setWinner(matchId, name); closeBrowserModal(); };
+                        container.appendChild(btn);
+                    });
+                    modal.style.display = 'flex';
                 }
             };
         }
@@ -116,7 +119,6 @@ function initTournament() {
         const m = matchData[matchId];
         const p1El = document.getElementById(matchId + "-0");
         const p2El = document.getElementById(matchId + "-1");
-        
         if (p1El) p1El.style.color = (p1El.innerText === name) ? "#44ff44" : "#ff4444";
         if (p2El) p2El.style.color = (p2El.innerText === name) ? "#44ff44" : "#ff4444";
 
@@ -128,7 +130,6 @@ function initTournament() {
                 if (m.nextMatchId === "CHAMP") target.classList.add("champion-text");
             }
         }
-
         const state = {};
         document.querySelectorAll('.row[id]').forEach(row => {
             state[row.id] = { text: row.innerText, color: row.style.color, isChamp: row.classList.contains('champion-text') };
@@ -150,21 +151,17 @@ function initTournament() {
         createL(midX, y2, x2 - midX, 2);
     }
 
-    // ЛОГИКА СЕТКИ
     const numPrelims = total - power;
     let pIdx = 0;
     let currentLevel = [];
     const r0_X = stepX + 50;
 
-    // Раунд 0 и Отборочные
     for (let i = 0; i < power / 2; i++) {
         const mid = `r0m${i}`;
         matchData[mid] = { nextMatchId: null, nextSlot: 0 };
         const y = startY + (i * stepY) + (stepY / 2);
-        
         const p1 = i < numPrelims ? "???" : players[numPrelims * 2 + (pIdx++)];
         const p2 = players[numPrelims * 2 + (pIdx++)];
-        
         const el = createMatch(r0_X, y, p1, p2, false, mid);
         currentLevel.push({ el, id: mid });
 
@@ -176,7 +173,6 @@ function initTournament() {
         }
     }
 
-    // Последующие раунды
     let round = 1;
     while (currentLevel.length > 1) {
         let nextLevel = [];
@@ -184,51 +180,32 @@ function initTournament() {
             const mid = `r${round}m${i}`;
             matchData[mid] = { nextMatchId: null, nextSlot: 0 };
             const m1 = currentLevel[i], m2 = currentLevel[i+1];
-            const y1 = m1.el.offsetTop + cardH/2;
-            const y2 = m2.el.offsetTop + cardH/2;
+            const y1 = m1.el.offsetTop + cardH/2, y2 = m2.el.offsetTop + cardH/2;
             const y = (y1 + y2) / 2;
-            
             const el = createMatch(r0_X + (stepX * round), y, "???", "???", false, mid);
-            
             matchData[m1.id].nextMatchId = mid; matchData[m1.id].nextSlot = 0;
             matchData[m2.id].nextMatchId = mid; matchData[m2.id].nextSlot = 1;
-            
             drawStepLine(m1.el.offsetLeft + cardW, y1, el.offsetLeft, y - (cardH / 4));
             drawStepLine(m2.el.offsetLeft + cardW, y2, el.offsetLeft, y + (cardH / 4));
-
             nextLevel.push({ el, id: mid });
         }
-        currentLevel = nextLevel;
-        round++;
+        currentLevel = nextLevel; round++;
     }
 
-    // Финал -> Чемпион
     if (currentLevel.length === 1) {
-        const last = currentLevel[0];
-        const mid = "CHAMP";
+        const last = currentLevel[0], mid = "CHAMP";
         const y = last.el.offsetTop + cardH/2;
         createMatch(r0_X + (stepX * round), y, "???", null, true, mid);
-        matchData[last.id].nextMatchId = mid;
-        matchData[last.id].nextSlot = 0;
-        
+        matchData[last.id].nextMatchId = mid; matchData[last.id].nextSlot = 0;
         const l = document.createElement("div");
         l.className = "line";
         l.style.left = (last.el.offsetLeft + cardW) + "px";
-        l.style.top = y + "px";
-        l.style.width = (stepX - cardW) + "px";
-        l.style.height = "2px";
-        wrapper.appendChild(l);
+        l.style.top = y + "px"; l.style.width = (stepX - cardW) + "px";
+        l.style.height = "2px"; wrapper.appendChild(l);
     }
-
     wrapper.style.width = (r0_X + (round + 1) * stepX + 100) + "px";
     wrapper.style.height = (startY + (power/2) * stepY + 100) + "px";
 }
 
-// Запуск
-window.addEventListener('load', () => {
-    setTimeout(initTournament, 200); 
-});
-
-tg.onEvent('viewportChanged', () => {
-    initTournament();
-});
+window.addEventListener('load', () => setTimeout(initTournament, 200));
+tg.onEvent('viewportChanged', initTournament);
