@@ -187,7 +187,7 @@ function initTournament() {
         const last = currentLevel[0];
         const mid = "CHAMP";
         const y = last.el.offsetTop + cardH/2;
-        const el = createMatch(r0_X + (stepX * round), y, "None", null, true, mid);
+        const el = createMatch(r0_X + (stepX * round), y, "???", null, true, mid);
         matchData[last.id].nextMatchId = mid;
         matchData[last.id].nextSlot = 0;
         
