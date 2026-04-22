@@ -45,7 +45,7 @@ function initTournament() {
         el.style.top = (y - cardH / 2) + "px";
         el.dataset.matchId = matchId;
 
-        let contentA = aName || "None", contentB = bName || "None";
+        let contentA = aName || "???", contentB = bName || "???";
         let styleA = "", styleB = "", classA = "";
 
         if (savedData?.cells) {
@@ -67,7 +67,7 @@ function initTournament() {
             el.onclick = () => {
                 const p1 = document.getElementById(matchId + "-0")?.innerText;
                 const p2 = document.getElementById(matchId + "-1")?.innerText;
-                if (p1 === "None" || p2 === "None") return;
+                if (p1 === "???" || p2 === "???") return;
 
                 tg.showPopup({ 
                     title: 'Победитель', 
@@ -140,7 +140,7 @@ function initTournament() {
         matchData[mid] = { nextMatchId: null, nextSlot: 0 };
         const y = startY + (i * stepY);
         
-        const p1 = i < numPrelims ? "None" : players[numPrelims * 2 + (pIdx++)];
+        const p1 = i < numPrelims ? "???" : players[numPrelims * 2 + (pIdx++)];
         const p2 = players[numPrelims * 2 + (pIdx++)];
         
         const el = createMatch(r0_X, y, p1, p2, false, mid);
@@ -168,7 +168,7 @@ function initTournament() {
             matchData[mid] = { nextMatchId: null, nextSlot: 0 };
             const m1 = currentLevel[i], m2 = currentLevel[i+1];
             const y = (m1.el.offsetTop + m1.el.offsetHeight/2 + m2.el.offsetTop + m2.el.offsetHeight/2) / 2;
-            const el = createMatch(r0_X + (stepX * round), y, "None", "None", false, mid);
+            const el = createMatch(r0_X + (stepX * round), y, "???", "???", false, mid);
             
             matchData[m1.id].nextMatchId = mid; matchData[m1.id].nextSlot = 0;
             matchData[m2.id].nextMatchId = mid; matchData[m2.id].nextSlot = 1;
