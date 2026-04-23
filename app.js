@@ -236,8 +236,8 @@ function initTournament() {
     }
     
     // Динамический размер воркспейса для скролла
-    wrapper.style.width = (r0_X + (round + 1) * stepX + 100) + "px";
-    wrapper.style.height = (startY + (power/2) * stepY + 100) + "px";
+    wrapper.style.width = (r0_X + (round + 1) * stepX) + "px";
+    wrapper.style.height = (startY + (power/2) * stepY) + "px";
 }
 
 window.addEventListener('load', () => setTimeout(initTournament, 200));
