@@ -8,8 +8,8 @@ function triggerReset() {
         location.reload();
     };
 
-    if (window.Telegram && tg.initData !== "" && tg.showConfirm) {
-        tg.showConfirm("Сбросить весь прогресс турнира?", (ok) => { if(ok) performReset(); });
+    if (window.Telegram && tg.initData !== "" && tg.showPopup) {
+        tg.showConfirm("Создать новую турнирную сетку?", (ok) => { if(ok) performReset(); });
     } else {
         if (confirm("Создать новую турнирную сетку?")) performReset();
     }
@@ -47,24 +47,30 @@ function initTournament() {
     const total = (typeof TOURNAMENT_PLAYERS !== 'undefined') ? TOURNAMENT_PLAYERS.length : 0;
     if (total === 0) return;
 
-    // --- ЛОГИКА РАНДОМА И ЗАГРУЗКИ ---
+    // --- ЛОГИКА РАНДОМА (Последний всегда на месте) ---
     const savedData = JSON.parse(localStorage.getItem(STORAGE_KEY));
     let players;
 
     if (savedData && savedData.players) {
-        // Если есть сохраненный порядок — используем его
         players = savedData.players;
     } else {
-        // Если данных нет — создаем новый рандомный порядок
-        players = [...TOURNAMENT_PLAYERS];
-        for (let i = players.length - 1; i > 0; i--) {
+        // Берем всех кроме последнего
+        const others = [...TOURNAMENT_PLAYERS].slice(0, -1);
+        const lastPlayer = TOURNAMENT_PLAYERS[TOURNAMENT_PLAYERS.length - 1];
+
+        // Перемешиваем остальных (Fisher-Yates)
+        for (let i = others.length - 1; i > 0; i--) {
             const j = Math.floor(Math.random() * (i + 1));
-            [players[i], players[j]] = [players[j], players[i]];
+            [others[i], others[j]] = [others[j], others[i]];
         }
-        // Сразу сохраняем структуру, чтобы рандом не пересчитывался при ресайзе
+
+        // Собираем обратно: перемешанные + последний в конце
+        players = [...others, lastPlayer];
+        
+        // Сохраняем начальное состояние
         localStorage.setItem(STORAGE_KEY, JSON.stringify({ players: players, cells: {} }));
     }
-    // --------------------------------
+    // --------------------------------------------------
 
     const power = Math.pow(2, Math.floor(Math.log2(total - 0.1)));
     const matchCountR1 = power / 2;
@@ -228,8 +234,10 @@ function initTournament() {
         l.style.top = y + "px"; l.style.width = (stepX - cardW) + "px";
         l.style.height = "2px"; wrapper.appendChild(l);
     }
-    wrapper.style.width = (r0_X + (round + 1) * stepX) + "px";
-    wrapper.style.height = (startY + (power/2) * stepY) + "px";
+    
+    // Динамический размер воркспейса для скролла
+    wrapper.style.width = (r0_X + (round + 1) * stepX + 100) + "px";
+    wrapper.style.height = (startY + (power/2) * stepY + 100) + "px";
 }
 
 window.addEventListener('load', () => setTimeout(initTournament, 200));
