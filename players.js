@@ -13,6 +13,7 @@ const TOURNAMENT_PLAYERS = [
     "broplay",
     "FotonX17",
     "Амин)",
+    "idrisov",
     "_KING_2.0",
     "Нрнр",
     "IDI",
