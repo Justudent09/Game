@@ -17,5 +17,6 @@ const TOURNAMENT_PLAYERS = [
     "Нрнр",
     "IDI",
     "Арно",
+    "Dominator",
     "incidentSSS"
 ];
